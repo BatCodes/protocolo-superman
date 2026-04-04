@@ -3,8 +3,6 @@ import { motion } from 'framer-motion'
 import type { ScannedMeal } from '../lib/types'
 import { callClaude, fileToBase64, hasApiKey } from '../lib/api'
 import { save } from '../lib/storage'
-import { GlassCard } from '../components/ui/GlassCard'
-import { Section } from '../components/ui/Section'
 
 interface FuelProps {
   scannedMeals: ScannedMeal[]
@@ -56,7 +54,6 @@ export function Fuel({ scannedMeals, setScannedMeals }: FuelProps) {
       setResult({ description: 'Error al analizar', kcal: 0, protein: 0, carbs: 0, fat: 0, confidence: 'low', notes: 'Reintenta' })
     }
     setScanning(false)
-    // Reset file input
     if (fileRef.current) fileRef.current.value = ''
   }
 
@@ -77,44 +74,44 @@ export function Fuel({ scannedMeals, setScannedMeals }: FuelProps) {
   }
 
   return (
-    <div className="pb-28 space-y-3">
-      <Section title="MEAL SCANNER" color="#16a34a" />
+    <div className="pb-28 space-y-4">
+      <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
+        Meal Scanner
+      </p>
 
       {/* Daily totals */}
       {todayMeals.length > 0 && (
-        <GlassCard className="p-3.5">
-          <div className="text-[8px] text-zinc-500 font-mono tracking-wider mb-2">HOY — TOTALES</div>
-          <div className="grid grid-cols-4 gap-2">
+        <div className="bg-[#1c1c1e] rounded-2xl p-4">
+          <div className="text-[13px] text-zinc-500 mb-3">Hoy — Totales</div>
+          <div className="grid grid-cols-4 gap-3">
             {[
-              { l: 'KCAL', v: totals.kcal, c: '#16a34a' },
-              { l: 'PROT', v: `${totals.protein}g`, c: '#06b6d4' },
-              { l: 'CARB', v: `${totals.carbs}g`, c: '#ea580c' },
-              { l: 'FAT', v: `${totals.fat}g`, c: '#c9a227' },
+              { l: 'KCAL', v: totals.kcal, c: '#30d158' },
+              { l: 'PROT', v: `${totals.protein}g`, c: '#64d2ff' },
+              { l: 'CARB', v: `${totals.carbs}g`, c: '#ff9f0a' },
+              { l: 'FAT', v: `${totals.fat}g`, c: '#ffd60a' },
             ].map((m, i) => (
-              <div key={i} className="text-center p-2 rounded-lg" style={{ background: m.c + '10' }}>
-                <div className="text-[16px] font-black font-mono" style={{ color: m.c }}>{m.v}</div>
-                <div className="text-[7px] font-mono text-zinc-500">{m.l}</div>
+              <div key={i} className="text-center">
+                <div className="text-[18px] font-bold mono" style={{ color: m.c }}>{m.v}</div>
+                <div className="text-[11px] text-zinc-500">{m.l}</div>
               </div>
             ))}
           </div>
-        </GlassCard>
+        </div>
       )}
 
       {/* Camera / Gallery buttons */}
       <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={scan} className="hidden" />
 
-      <div className="grid grid-cols-2 gap-2">
-        <GlassCard
-          className="p-5 text-center"
-          glowColor="#16a34a"
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          className="press bg-[#1c1c1e] rounded-2xl p-6 text-center active:scale-[0.97] transition-transform"
           onClick={() => fileRef.current?.click()}
         >
-          <div className="text-2xl mb-1">📸</div>
-          <div className="text-[10px] font-bold font-mono" style={{ color: '#16a34a' }}>CÁMARA</div>
-        </GlassCard>
-        <GlassCard
-          className="p-5 text-center"
-          glowColor="#8b5cf6"
+          <div className="text-3xl mb-2">📸</div>
+          <div className="text-[13px] font-semibold" style={{ color: '#30d158' }}>Camara</div>
+        </button>
+        <button
+          className="press bg-[#1c1c1e] rounded-2xl p-6 text-center active:scale-[0.97] transition-transform"
           onClick={() => {
             const inp = document.createElement('input')
             inp.type = 'file'
@@ -123,90 +120,98 @@ export function Fuel({ scannedMeals, setScannedMeals }: FuelProps) {
             inp.click()
           }}
         >
-          <div className="text-2xl mb-1">🖼️</div>
-          <div className="text-[10px] font-bold font-mono" style={{ color: '#8b5cf6' }}>GALERÍA</div>
-        </GlassCard>
+          <div className="text-3xl mb-2">🖼️</div>
+          <div className="text-[13px] font-semibold" style={{ color: '#bf5af2' }}>Galeria</div>
+        </button>
       </div>
 
       {/* Optional description */}
       <input
         value={desc}
         onChange={e => setDesc(e.target.value)}
-        placeholder="Descripción opcional..."
-        className="w-full bg-[#0d0d0d] border border-white/[0.06] text-zinc-200 px-3.5 py-2.5 text-[12px] rounded-xl outline-none focus:border-[#c9a227]/30 transition-colors"
+        placeholder="Descripcion opcional..."
+        className="w-full bg-[#1c1c1e] text-white px-4 py-3 text-[15px] rounded-2xl outline-none"
       />
 
       {/* Scanning state */}
       {scanning && (
-        <GlassCard className="p-6 text-center">
-          <div className="text-[11px] font-mono animate-pulse" style={{ color: '#c9a227' }}>
-            ANALIZANDO COMIDA...
+        <div className="bg-[#1c1c1e] rounded-2xl p-6 text-center">
+          <div className="text-[15px] font-semibold animate-pulse" style={{ color: '#ffd60a' }}>
+            Analizando comida...
           </div>
-        </GlassCard>
+        </div>
       )}
 
       {/* Result card */}
       {preview && result && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-          <GlassCard className="overflow-hidden" glowColor="#16a34a">
-            <img src={preview} alt="" className="w-full h-36 object-cover" />
-            <div className="p-3.5">
-              <div className="text-[12px] font-bold text-zinc-200 mb-2">{result.description}</div>
-              <div className="grid grid-cols-4 gap-1.5 mb-3">
+          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+            <img src={preview} alt="" className="w-full h-40 object-cover" />
+            <div className="p-4">
+              <div className="text-[15px] font-semibold text-white mb-3">{result.description}</div>
+              <div className="grid grid-cols-4 gap-2 mb-4">
                 {[
-                  { l: 'KCAL', v: result.kcal, c: '#16a34a' },
-                  { l: 'P', v: `${result.protein}g`, c: '#06b6d4' },
-                  { l: 'C', v: `${result.carbs}g`, c: '#ea580c' },
-                  { l: 'F', v: `${result.fat}g`, c: '#c9a227' },
+                  { l: 'KCAL', v: result.kcal, c: '#30d158' },
+                  { l: 'P', v: `${result.protein}g`, c: '#64d2ff' },
+                  { l: 'C', v: `${result.carbs}g`, c: '#ff9f0a' },
+                  { l: 'F', v: `${result.fat}g`, c: '#ffd60a' },
                 ].map((m, i) => (
-                  <div key={i} className="text-center p-2 rounded-lg" style={{ background: m.c + '10' }}>
-                    <div className="text-[15px] font-black font-mono" style={{ color: m.c }}>{m.v}</div>
-                    <div className="text-[7px] font-mono text-zinc-500">{m.l}</div>
+                  <div key={i} className="text-center">
+                    <div className="text-[17px] font-bold mono" style={{ color: m.c }}>{m.v}</div>
+                    <div className="text-[11px] text-zinc-500">{m.l}</div>
                   </div>
                 ))}
               </div>
               {result.notes && (
-                <div className="text-[9px] text-zinc-500 mb-3">{result.notes}</div>
+                <div className="text-[13px] text-zinc-500 mb-4">{result.notes}</div>
               )}
               <button
                 onClick={saveMeal}
-                className="w-full py-2.5 rounded-xl text-[11px] font-black font-mono transition-all active:scale-[0.98]"
-                style={{ background: '#16a34a', color: '#000' }}
+                className="press w-full py-3.5 rounded-2xl text-[15px] font-semibold transition-all active:scale-[0.98]"
+                style={{ background: 'linear-gradient(135deg, #30d158, #28a745)', color: '#fff' }}
               >
-                ✓ REGISTRAR COMIDA
+                Registrar Comida
               </button>
             </div>
-          </GlassCard>
+          </div>
         </motion.div>
       )}
 
       {/* Today's meals log */}
       {todayMeals.length > 0 && (
         <>
-          <Section title="REGISTRO HOY" color="#c9a227" right={`${todayMeals.length} comidas`} />
-          {todayMeals.map((m, i) => (
-            <GlassCard key={i} className="flex gap-3 p-3 items-center">
-              {m.photo && (
-                <img src={m.photo} alt="" className="w-11 h-11 object-cover rounded-lg flex-shrink-0" />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] text-zinc-200 truncate">{m.description}</div>
-                <div className="text-[9px] text-zinc-500 font-mono">
-                  {m.time} · {m.kcal}kcal · {m.protein}P · {m.carbs}C · {m.fat}F
+          <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
+            Registro Hoy — {todayMeals.length} comidas
+          </p>
+          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+            {todayMeals.map((m, i) => (
+              <div
+                key={i}
+                className="flex gap-3 px-4 py-3 items-center"
+                style={i < todayMeals.length - 1 ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+              >
+                {m.photo && (
+                  <img src={m.photo} alt="" className="w-11 h-11 object-cover rounded-xl flex-shrink-0" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="text-[15px] text-white truncate">{m.description}</div>
+                  <div className="text-[13px] text-zinc-500 mono">
+                    {m.time} · {m.kcal}kcal · {m.protein}P · {m.carbs}C · {m.fat}F
+                  </div>
                 </div>
               </div>
-            </GlassCard>
-          ))}
+            ))}
+          </div>
         </>
       )}
 
       {/* No API key warning */}
       {!hasApiKey() && (
-        <GlassCard className="p-4 text-center">
-          <div className="text-[10px] text-zinc-500">
+        <div className="bg-[#1c1c1e] rounded-2xl p-4 text-center">
+          <div className="text-[13px] text-zinc-500">
             Configura tu API key en ajustes para usar el scanner IA
           </div>
-        </GlassCard>
+        </div>
       )}
     </div>
   )

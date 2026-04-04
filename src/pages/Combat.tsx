@@ -3,8 +3,6 @@ import { motion } from 'framer-motion'
 import type { Plan, WorkoutLog, DecisionResult } from '../lib/types'
 import { WORKOUTS, SPLITS, DAY_LABELS } from '../lib/constants'
 import { save } from '../lib/storage'
-import { GlassCard } from '../components/ui/GlassCard'
-import { Badge } from '../components/ui/Badge'
 
 interface CombatProps {
   plan: Plan
@@ -32,29 +30,29 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
   const showWarning = decision.mode !== 'NORMAL' && decision.mode !== 'PUSH'
 
   return (
-    <div className="pb-28 space-y-3">
+    <div className="pb-28 space-y-4">
       {/* Decision Warning */}
       {showWarning && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <GlassCard className="p-3.5" glowColor="#ea580c">
-            <div className="text-[10px] font-bold font-mono" style={{ color: '#ea580c' }}>
+          <div className="bg-[#1c1c1e] rounded-2xl p-4">
+            <div className="text-[13px] font-semibold" style={{ color: '#ff9f0a' }}>
               {decision.action}
             </div>
             <div className="flex gap-1.5 mt-2 flex-wrap">
               {decision.mods.map((m, i) => (
                 <span
                   key={i}
-                  className="text-[9px] font-mono px-2 py-0.5 rounded"
-                  style={{ background: '#ea580c15', color: '#ea580c' }}
+                  className="text-[11px] mono px-2.5 py-1 rounded-lg"
+                  style={{ background: 'rgba(255,159,10,0.12)', color: '#ff9f0a' }}
                 >
                   {m}
                 </span>
               ))}
             </div>
-          </GlassCard>
+          </div>
         </motion.div>
       )}
 
@@ -64,54 +62,66 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
           <button
             key={i}
             onClick={() => setSelectedDay(i)}
-            className="py-2 text-center rounded-xl transition-all duration-200"
+            className="press py-2 text-center rounded-xl transition-all duration-200"
             style={{
-              border: selectedDay === i ? '2px solid #c9a227' : '1px solid rgba(255,255,255,0.06)',
-              background: selectedDay === i ? '#c9a22715' : '#0d0d0d80',
-              color: selectedDay === i ? '#c9a227' : '#71717a',
+              background: selectedDay === i ? '#ffd60a' : '#1c1c1e',
+              color: selectedDay === i ? '#000' : '#8e8e93',
             }}
           >
-            <div className="text-[10px] font-black font-mono">{d}</div>
-            <div className="text-[6px] font-mono mt-0.5">{SPLITS[i]}</div>
+            <div className="text-[10px] font-bold mono">{d}</div>
+            <div className="text-[7px] mono mt-0.5" style={{ opacity: 0.7 }}>{SPLITS[i]}</div>
           </button>
         ))}
       </div>
 
       {/* REST Day */}
       {split === 'REST' ? (
-        <GlassCard className="p-8 text-center">
+        <div className="bg-[#1c1c1e] rounded-2xl p-8 text-center">
           <div className="text-2xl mb-2">🔄</div>
-          <div className="text-sm font-extrabold font-mono text-zinc-200">DESCANSO</div>
-          <div className="text-[10px] text-zinc-500 mt-1">Recuperación activa. Movilidad. Caminar.</div>
-        </GlassCard>
+          <div className="text-[15px] font-semibold text-white">Descanso</div>
+          <div className="text-[13px] text-zinc-500 mt-1">Recuperacion activa. Movilidad. Caminar.</div>
+        </div>
       ) : (
         /* Exercise Cards */
         <motion.div
-          className="space-y-2"
           initial="hidden"
           animate="show"
           variants={{ show: { transition: { staggerChildren: 0.04 } } }}
         >
-          {exercises.map((ex, i) => {
-            const key = `${TODAY}-${split}-${i}`
-            const sets = wkLog[key] || []
+          <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
+            {split}
+          </p>
+          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+            {exercises.map((ex, i) => {
+              const key = `${TODAY}-${split}-${i}`
+              const sets = wkLog[key] || []
+              const isLast = i === exercises.length - 1
 
-            return (
-              <motion.div
-                key={`${split}-${i}`}
-                variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
-              >
-                <GlassCard className="p-3.5">
+              return (
+                <motion.div
+                  key={`${split}-${i}`}
+                  variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
+                  className="px-4 py-3"
+                  style={!isLast ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+                >
                   {/* Exercise header */}
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-bold text-zinc-200">{ex.n}</span>
+                      <span className="text-[14px] font-semibold text-white">{ex.n}</span>
                       {ex.t && (
-                        <Badge text={ex.t} color={ex.t === 'T-DRIVER' ? '#c9a227' : '#dc2626'} />
+                        <span
+                          className="text-[10px] mono px-2 py-0.5 rounded-md"
+                          style={{
+                            background: ex.t === 'T-DRIVER' ? 'rgba(255,214,10,0.15)' : 'rgba(255,69,58,0.15)',
+                            color: ex.t === 'T-DRIVER' ? '#ffd60a' : '#ff453a',
+                          }}
+                        >
+                          {ex.t}
+                        </span>
                       )}
                     </div>
-                    <span className="text-[11px] font-mono" style={{ color: '#c9a227' }}>
-                      {ex.s}×{ex.r}
+                    <span className="text-[13px] mono" style={{ color: '#ffd60a' }}>
+                      {ex.s}x{ex.r}
                     </span>
                   </div>
 
@@ -123,14 +133,13 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                           key={si}
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="text-[9px] font-mono font-bold px-2.5 py-1 rounded-lg"
+                          className="text-[11px] mono font-semibold px-2.5 py-1 rounded-lg"
                           style={{
-                            background: 'rgba(22,163,74,0.12)',
-                            border: '1px solid rgba(22,163,74,0.25)',
-                            color: '#16a34a',
+                            background: 'rgba(48,209,88,0.12)',
+                            color: '#30d158',
                           }}
                         >
-                          {s.w}kg × {s.r}
+                          {s.w}kg x {s.r}
                         </motion.div>
                       ))}
                     </div>
@@ -143,7 +152,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                       placeholder="kg"
                       value={inputs[`${i}w`] || ''}
                       onChange={e => setInputs({ ...inputs, [`${i}w`]: e.target.value })}
-                      className="w-16 bg-[#111] border border-white/[0.06] text-zinc-200 px-2.5 py-2 text-[11px] font-mono rounded-lg outline-none focus:border-[#c9a227]/40 transition-colors"
+                      className="w-16 bg-[#2c2c2e] text-white px-2.5 py-2 text-[13px] mono rounded-xl outline-none"
                     />
                     <input
                       type="number"
@@ -160,7 +169,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                           }
                         }
                       }}
-                      className="w-16 bg-[#111] border border-white/[0.06] text-zinc-200 px-2.5 py-2 text-[11px] font-mono rounded-lg outline-none focus:border-[#c9a227]/40 transition-colors"
+                      className="w-16 bg-[#2c2c2e] text-white px-2.5 py-2 text-[13px] mono rounded-xl outline-none"
                     />
                     <button
                       onClick={() => {
@@ -171,16 +180,16 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                           setInputs({ ...inputs, [`${i}w`]: '', [`${i}r`]: '' })
                         }
                       }}
-                      className="px-4 py-2 rounded-lg text-[10px] font-black font-mono transition-all active:scale-95"
-                      style={{ background: '#c9a227', color: '#000' }}
+                      className="press px-4 py-2 rounded-2xl text-[12px] font-bold mono transition-all active:scale-95"
+                      style={{ background: 'linear-gradient(135deg, #ffd60a, #ff9f0a)', color: '#000' }}
                     >
                       + SET
                     </button>
                   </div>
-                </GlassCard>
-              </motion.div>
-            )
-          })}
+                </motion.div>
+              )
+            })}
+          </div>
         </motion.div>
       )}
     </div>

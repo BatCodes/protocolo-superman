@@ -17,162 +17,131 @@ export default function App() {
   const [sDate, setSDate] = useState(TODAY)
   const [showSettings, setShowSettings] = useState(false)
 
-  // Loading screen — Apple-style minimal
+  // Loading
   if (!app.loaded) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           className="text-center"
         >
           <motion.div
-            className="w-16 h-16 mx-auto mb-6 rounded-[18px] flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(145deg, #c9a227, #8b6914)',
-              boxShadow: '0 8px 32px -4px rgba(201, 162, 39, 0.25)',
-            }}
-            animate={{ rotate: [0, 3, -3, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <span className="text-2xl font-black text-black mono">S</span>
-          </motion.div>
-          <motion.div
-            className="text-[10px] mono tracking-[0.4em] text-[#c9a227]/70"
-            animate={{ opacity: [0.4, 1, 0.4] }}
+            className="w-16 h-16 mx-auto mb-5 rounded-[16px] flex items-center justify-center"
+            style={{ background: 'linear-gradient(145deg, #ffd60a, #ff9f0a)' }}
+            animate={{ scale: [1, 1.04, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            CARGANDO
+            <span className="text-2xl font-black text-black">S</span>
           </motion.div>
+          <div className="text-[14px] text-zinc-500">Cargando...</div>
         </motion.div>
       </div>
     )
   }
 
-  // Setup screen — Apple onboarding style
+  // Onboarding
   if (app.setup) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-black flex items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
+          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="w-full max-w-sm text-center"
         >
-          {/* App icon */}
           <motion.div
-            className="w-20 h-20 mx-auto mb-6 rounded-[22px] flex items-center justify-center"
+            className="w-24 h-24 mx-auto mb-8 rounded-[24px] flex items-center justify-center"
             style={{
-              background: 'linear-gradient(145deg, #c9a227, #8b6914)',
-              boxShadow: '0 12px 40px -8px rgba(201, 162, 39, 0.3)',
+              background: 'linear-gradient(145deg, #ffd60a, #ff9f0a)',
+              boxShadow: '0 12px 40px -8px rgba(255, 214, 10, 0.25)',
             }}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
           >
-            <span className="text-3xl font-black text-black mono">S</span>
+            <span className="text-4xl font-black text-black">S</span>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
+          <h1 className="text-[34px] font-bold text-white tracking-tight leading-tight">
+            Protocolo Superman
+          </h1>
+          <p className="text-[15px] text-zinc-500 mt-2 mb-10 leading-relaxed">
+            Selecciona la fecha en la que empezaste o vas a empezar el protocolo.
+          </p>
+
+          <input
+            type="date"
+            value={sDate}
+            onChange={e => setSDate(e.target.value)}
+            className="w-full bg-[#1c1c1e] text-white px-5 py-4 text-[17px] rounded-2xl outline-none text-center mb-4 mono"
+          />
+
+          <button
+            onClick={() => app.startProtocol(sDate)}
+            className="w-full py-4 rounded-2xl text-[17px] font-semibold press"
+            style={{
+              background: 'linear-gradient(135deg, #ffd60a, #ff9f0a)',
+              color: '#000',
+            }}
           >
-            <h1 className="text-[28px] font-bold text-white tracking-tight mb-1">
-              Protocolo Superman
-            </h1>
-            <p className="text-[13px] text-zinc-500 mb-8 leading-relaxed">
-              Selecciona la fecha en la que empezaste o vas a empezar el protocolo.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <input
-              type="date"
-              value={sDate}
-              onChange={e => setSDate(e.target.value)}
-              className="w-full frosted border border-white/[0.08] text-zinc-200 px-5 py-4 text-[15px] mono rounded-2xl outline-none text-center mb-4 focus:border-[#c9a227]/30 transition-all"
-            />
-
-            <button
-              onClick={() => app.startProtocol(sDate)}
-              className="w-full py-4 rounded-2xl text-[15px] font-semibold tracking-wide press"
-              style={{
-                background: 'linear-gradient(135deg, #c9a227, #a88620)',
-                color: '#000',
-                boxShadow: '0 4px 24px -4px rgba(201,162,39,0.35)',
-              }}
-            >
-              Comenzar
-            </button>
-          </motion.div>
+            Comenzar
+          </button>
         </motion.div>
       </div>
     )
   }
 
-  // Settings overlay
   if (showSettings) {
     return <Settings onClose={() => setShowSettings(false)} />
   }
 
-  const readyColor = app.readiness.score >= 70 ? '#16a34a' : app.readiness.score >= 50 ? '#ea580c' : '#dc2626'
+  const readyColor = app.readiness.score >= 70 ? '#30d158' : app.readiness.score >= 50 ? '#ff9f0a' : '#ff453a'
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-200">
-      {/* Header — Apple frosted navigation bar */}
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
       <div
-        className="sticky top-0 z-50 frosted-heavy border-b border-white/[0.04]"
+        className="sticky top-0 z-50 frosted border-b border-white/[0.06]"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div className="px-4 py-2.5 flex justify-between items-center">
+        <div className="px-4 py-2 flex justify-between items-center">
           <div>
-            <div className="text-[7px] text-zinc-600 mono tracking-[0.4em] uppercase">
-              Protocolo Superman
+            <div className="text-[11px] text-zinc-500 font-medium">
+              Día {app.plan.day} · Semana {app.plan.week}
             </div>
-            <div className="text-[13px] font-bold mono" style={{ color: '#c9a227' }}>
-              DÍA {app.plan.day} · SEM {app.plan.week} · {app.plan.phaseName}
+            <div className="text-[17px] font-bold" style={{ color: '#ffd60a' }}>
+              {app.plan.phaseName}
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {/* Settings button */}
             <button
               onClick={() => setShowSettings(true)}
-              className="text-zinc-600 hover:text-zinc-400 transition-colors p-1.5 -m-1 rounded-full press"
+              className="p-2 -m-1 rounded-full press text-zinc-500"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
                 <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
             </button>
-            {/* Readiness indicator */}
-            <div className="text-right">
-              <div className="text-[8px] mono font-bold" style={{ color: readyColor }}>
-                READY {app.readiness.score}
-              </div>
-              <div className="text-[7px] text-zinc-600 mono">
-                ACWR {app.readiness.acwr.toFixed(2)}
-              </div>
-            </div>
-            <Ring pct={app.readiness.score} size={30} strokeWidth={3} color={readyColor} />
+            <Ring pct={app.readiness.score} size={32} strokeWidth={3} color={readyColor}>
+              <span className="text-[11px] font-bold mono" style={{ color: readyColor }}>
+                {app.readiness.score}
+              </span>
+            </Ring>
           </div>
         </div>
       </div>
 
-      {/* Page Content */}
-      <div className="px-3.5 pt-2">
+      {/* Content */}
+      <div className="px-2 pt-1">
         <AnimatePresence mode="wait">
           <motion.div
             key={app.tab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
           >
             {app.tab === 'cmd' && (
               <Dashboard
@@ -192,83 +161,41 @@ export default function App() {
               />
             )}
             {app.tab === 'combat' && (
-              <Combat
-                plan={app.plan}
-                wkLog={app.wkLog}
-                setWkLog={app.setWkLog}
-                decision={app.decision}
-              />
+              <Combat plan={app.plan} wkLog={app.wkLog} setWkLog={app.setWkLog} decision={app.decision} />
             )}
             {app.tab === 'fuel' && (
-              <Fuel
-                scannedMeals={app.scannedMeals}
-                setScannedMeals={app.setScannedMeals}
-              />
+              <Fuel scannedMeals={app.scannedMeals} setScannedMeals={app.setScannedMeals} />
             )}
             {app.tab === 'recon' && (
-              <Recon
-                hd={app.hd}
-                setHd={app.setHd}
-                medReports={app.medReports}
-                setMedReports={app.setMedReports}
-              />
+              <Recon hd={app.hd} setHd={app.setHd} medReports={app.medReports} setMedReports={app.setMedReports} />
             )}
             {app.tab === 'intel' && (
-              <Intel
-                plan={app.plan}
-                hd={app.hd}
-                checks={app.checks}
-                scannedMeals={app.scannedMeals}
-                wkLog={app.wkLog}
-                readiness={app.readiness}
-                decision={app.decision}
-                injury={app.injury}
-              />
+              <Intel plan={app.plan} hd={app.hd} checks={app.checks} scannedMeals={app.scannedMeals} wkLog={app.wkLog} readiness={app.readiness} decision={app.decision} injury={app.injury} />
             )}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Bottom Tab Bar — Apple iOS Tab Bar */}
+      {/* Tab Bar — iOS Style */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 frosted-heavy border-t border-white/[0.04] safe-bottom"
+        className="fixed bottom-0 left-0 right-0 z-50 frosted border-t border-white/[0.06] safe-bottom"
       >
-        <div className="grid grid-cols-5 pt-1">
+        <div className="grid grid-cols-5 pt-1.5 pb-0.5">
           {TABS.map(t => {
             const active = app.tab === t.id
             return (
               <button
                 key={t.id}
                 onClick={() => app.setTab(t.id)}
-                className="py-1.5 flex flex-col items-center gap-0.5 relative press"
+                className="py-1 flex flex-col items-center gap-0.5 press"
               >
-                {/* Icon */}
-                <motion.span
-                  className="text-[17px]"
-                  animate={active ? { scale: [1, 1.15, 1] } : { scale: 1 }}
-                  transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
-                >
-                  {t.icon}
-                </motion.span>
-                {/* Label */}
+                <span className="text-[20px]">{t.icon}</span>
                 <span
-                  className="text-[10px] mono transition-colors duration-200"
-                  style={{
-                    color: active ? '#c9a227' : '#52525b',
-                    fontWeight: active ? 600 : 400,
-                  }}
+                  className="text-[10px] font-medium"
+                  style={{ color: active ? '#ffd60a' : '#636366' }}
                 >
                   {t.label}
                 </span>
-                {/* Active dot indicator — Apple style */}
-                {active && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute -top-0.5 w-5 h-[2px] rounded-full"
-                    style={{ background: '#c9a227' }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                  />
-                )}
               </button>
             )
           })}

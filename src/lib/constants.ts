@@ -127,6 +127,23 @@ export const TABS = [
   { id: 'intel' as const, icon: '🎖️', label: 'INTEL' },
 ] as const
 
+// ═══════════════════════════════════════════════════════════
+// DAILY MEAL SCHEDULE
+// ═══════════════════════════════════════════════════════════
+export const DAILY_MEALS = [
+  { time: '7:00', title: 'Despertar', desc: 'Exposición solar 10min. Pesar en ayunas.', icon: '☀️', type: 'routine' as const },
+  { time: '7:30', title: 'Meal 1 — Desayuno', desc: 'Huevos + ghee + plátano. Stack AM: D3, Zinc, Omega-3, Creatina.', icon: '🍳', type: 'meal' as const },
+  { time: '10:30', title: 'Meal 2 — Media mañana', desc: 'Arroz + pollo + ajo + cúrcuma', icon: '🍗', type: 'meal' as const },
+  { time: '13:30', title: 'Meal 3 — Almuerzo', desc: 'Boniato + carne picada halal', icon: '🥩', type: 'meal' as const },
+  { time: '15:30', title: 'Pre-Workout', desc: 'Avena + whey + miel. Preparar sesión.', icon: '⚡', type: 'meal' as const },
+  { time: '16:00', title: 'Entrenamiento', desc: 'Sesión de entreno. Sin límite de tiempo.', icon: '🏋️', type: 'routine' as const },
+  { time: '19:00', title: 'Meal 4 — Post-WO', desc: 'Whey + arroz + pollo. Ventana anabólica.', icon: '🍚', type: 'meal' as const },
+  { time: '19:30', title: 'Sauna', desc: 'Protocolo térmico post-entreno.', icon: '🔥', type: 'routine' as const },
+  { time: '21:00', title: 'Toque de queda', desc: 'Sin pantallas. Preparar sueño.', icon: '📱', type: 'routine' as const },
+  { time: '22:00', title: 'Meal 5 — Pre-bed', desc: 'Yogur + almendras + Mg. Stack PM.', icon: '🌙', type: 'meal' as const },
+  { time: '22:30', title: 'Lights Out', desc: 'Objetivo: dormido antes de 23:00.', icon: '💤', type: 'routine' as const },
+]
+
 // Quick prompts for Intel tab
 export const QUICK_PROMPTS = [
   'Adapta: no pude entrenar',

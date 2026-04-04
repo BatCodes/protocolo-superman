@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { getApiKey, setApiKey } from '../lib/api'
-import { GlassCard } from '../components/ui/GlassCard'
-import { Section } from '../components/ui/Section'
 
 interface SettingsProps {
   onClose: () => void
@@ -19,98 +17,134 @@ export function Settings({ onClose }: SettingsProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-200">
-      <div className="sticky top-0 z-50 backdrop-blur-xl border-b border-white/[0.04] px-4 py-3 flex items-center justify-between" style={{ background: '#050505ee' }}>
-        <button onClick={onClose} className="text-zinc-400 text-sm font-mono">
+    <div className="min-h-screen bg-black text-white">
+      <div className="sticky top-0 z-50 backdrop-blur-xl px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.85)' }}>
+        <button onClick={onClose} className="press text-[17px] font-normal" style={{ color: '#64d2ff' }}>
           ← Volver
         </button>
-        <span className="text-[10px] font-mono text-zinc-600 tracking-[0.2em]">AJUSTES</span>
-        <div className="w-12" />
+        <span className="text-[17px] font-semibold text-white">Ajustes</span>
+        <div className="w-16" />
       </div>
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="px-4 py-4 space-y-3"
+        className="px-4 py-6 space-y-6"
       >
-        <Section title="API ANTHROPIC" color="#c9a227" />
-        <GlassCard className="p-4">
-          <div className="text-[11px] text-zinc-400 mb-3 leading-relaxed">
-            Tu API key se guarda localmente en tu dispositivo. Nunca se envía a ningún servidor excepto la API de Anthropic directamente.
-          </div>
-          <input
-            type="password"
-            value={key}
-            onChange={e => setKey(e.target.value)}
-            placeholder="sk-ant-..."
-            className="w-full bg-[#111] border border-white/[0.06] text-zinc-200 px-3.5 py-3 text-[12px] font-mono rounded-xl outline-none focus:border-[#c9a227]/30 transition-colors mb-3"
-          />
-          <button
-            onClick={handleSave}
-            className="w-full py-3 rounded-xl text-[11px] font-black font-mono transition-all active:scale-[0.98]"
-            style={{
-              background: saved ? '#16a34a' : '#c9a227',
-              color: '#000',
-            }}
-          >
-            {saved ? '✓ GUARDADA' : 'GUARDAR API KEY'}
-          </button>
-        </GlassCard>
-
-        <Section title="FUNCIONES IA" color="#06b6d4" />
-        <GlassCard className="p-4">
-          <div className="space-y-3 text-[11px] text-zinc-400">
-            <div className="flex items-start gap-2">
-              <span className="text-[#16a34a] font-mono text-xs">■</span>
-              <div><strong className="text-zinc-200">Briefing automático</strong> — Análisis diario de tu estado con recomendaciones</div>
+        {/* API Key Section */}
+        <div>
+          <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
+            API Anthropic
+          </p>
+          <div className="bg-[#1c1c1e] rounded-2xl p-4 space-y-3">
+            <div className="text-[13px] text-zinc-500 leading-relaxed">
+              Tu API key se guarda localmente en tu dispositivo. Nunca se envia a ningun servidor excepto la API de Anthropic directamente.
             </div>
-            <div className="flex items-start gap-2">
-              <span className="text-[#06b6d4] font-mono text-xs">■</span>
-              <div><strong className="text-zinc-200">Meal Scanner</strong> — Escanea fotos de comida para analizar macros</div>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-[#8b5cf6] font-mono text-xs">■</span>
-              <div><strong className="text-zinc-200">Intel Chat</strong> — Consultor IA con contexto completo de tu protocolo</div>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-[#dc2626] font-mono text-xs">■</span>
-              <div><strong className="text-zinc-200">Lab Analysis</strong> — Analiza PDFs de analíticas sanguíneas</div>
-            </div>
+            <input
+              type="password"
+              value={key}
+              onChange={e => setKey(e.target.value)}
+              placeholder="sk-ant-..."
+              className="w-full bg-[#2c2c2e] text-white px-4 py-3 text-[15px] mono rounded-xl outline-none"
+            />
+            <button
+              onClick={handleSave}
+              className="press w-full py-3.5 rounded-2xl text-[15px] font-semibold transition-all active:scale-[0.98]"
+              style={{
+                background: saved
+                  ? 'linear-gradient(135deg, #30d158, #28a745)'
+                  : 'linear-gradient(135deg, #ffd60a, #ff9f0a)',
+                color: '#000',
+              }}
+            >
+              {saved ? 'Guardada' : 'Guardar API Key'}
+            </button>
           </div>
-        </GlassCard>
+        </div>
 
-        <Section title="INSTALAR EN IPHONE" color="#c9a227" />
-        <GlassCard className="p-4">
-          <div className="text-[11px] text-zinc-400 leading-relaxed space-y-2">
-            <p>1. Abre esta web en <strong className="text-zinc-200">Safari</strong> en tu iPhone</p>
-            <p>2. Pulsa el botón <strong className="text-zinc-200">Compartir</strong> (cuadrado con flecha)</p>
-            <p>3. Selecciona <strong className="text-zinc-200">"Añadir a pantalla de inicio"</strong></p>
-            <p>4. La app funcionará offline como una app nativa</p>
+        {/* AI Features Section */}
+        <div>
+          <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
+            Funciones IA
+          </p>
+          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+            {[
+              { color: '#30d158', title: 'Briefing automatico', desc: 'Analisis diario de tu estado con recomendaciones' },
+              { color: '#64d2ff', title: 'Meal Scanner', desc: 'Escanea fotos de comida para analizar macros' },
+              { color: '#bf5af2', title: 'Intel Chat', desc: 'Consultor IA con contexto completo de tu protocolo' },
+              { color: '#ff453a', title: 'Lab Analysis', desc: 'Analiza PDFs de analiticas sanguineas' },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="px-4 py-3 flex items-start gap-3"
+                style={i < 3 ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+              >
+                <div
+                  className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                  style={{ background: item.color }}
+                />
+                <div>
+                  <div className="text-[15px] text-white">{item.title}</div>
+                  <div className="text-[13px] text-zinc-500">{item.desc}</div>
+                </div>
+              </div>
+            ))}
           </div>
-        </GlassCard>
+        </div>
 
-        <Section title="DATOS" color="#dc2626" />
-        <GlassCard className="p-4">
-          <div className="text-[11px] text-zinc-400 mb-3">
-            Todos los datos se guardan localmente en tu dispositivo (IndexedDB).
+        {/* Install Instructions Section */}
+        <div>
+          <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
+            Instalar en iPhone
+          </p>
+          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+            {[
+              'Abre esta web en Safari en tu iPhone',
+              'Pulsa el boton Compartir (cuadrado con flecha)',
+              'Selecciona "Anadir a pantalla de inicio"',
+              'La app funcionara offline como una app nativa',
+            ].map((step, i) => (
+              <div
+                key={i}
+                className="px-4 py-3 flex items-center gap-3"
+                style={i < 3 ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+              >
+                <span className="text-[13px] mono flex-shrink-0" style={{ color: '#ffd60a' }}>{i + 1}</span>
+                <span className="text-[15px] text-white">{step}</span>
+              </div>
+            ))}
           </div>
-          <button
-            onClick={() => {
-              if (confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')) {
-                indexedDB.deleteDatabase('keyval-store')
-                localStorage.clear()
-                window.location.reload()
-              }
-            }}
-            className="w-full py-2.5 rounded-xl text-[10px] font-bold font-mono border border-red-500/30 text-red-500 bg-red-500/5 transition-all active:scale-[0.98]"
-          >
-            BORRAR TODOS LOS DATOS
-          </button>
-        </GlassCard>
+        </div>
 
+        {/* Data Management Section */}
+        <div>
+          <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
+            Datos
+          </p>
+          <div className="bg-[#1c1c1e] rounded-2xl p-4 space-y-3">
+            <div className="text-[13px] text-zinc-500">
+              Todos los datos se guardan localmente en tu dispositivo (IndexedDB).
+            </div>
+            <button
+              onClick={() => {
+                if (confirm('Borrar TODOS los datos? Esta accion no se puede deshacer.')) {
+                  indexedDB.deleteDatabase('keyval-store')
+                  localStorage.clear()
+                  window.location.reload()
+                }
+              }}
+              className="press w-full py-3 rounded-2xl text-[15px] font-semibold transition-all active:scale-[0.98]"
+              style={{ background: 'rgba(255,69,58,0.12)', color: '#ff453a' }}
+            >
+              Borrar Todos los Datos
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
         <div className="text-center py-6">
-          <div className="text-[8px] text-zinc-700 font-mono tracking-[0.3em]">PROTOCOLO SUPERMAN</div>
-          <div className="text-[8px] text-zinc-700 font-mono">v5 ELITE · PWA</div>
+          <div className="text-[11px] text-zinc-600">PROTOCOLO SUPERMAN</div>
+          <div className="text-[11px] text-zinc-600">v5 ELITE · PWA</div>
         </div>
       </motion.div>
     </div>

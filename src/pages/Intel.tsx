@@ -4,7 +4,6 @@ import type { Plan, HealthData, WorkoutLog, ScannedMeal, ReadinessResult, Decisi
 import { AI_SYSTEM_PROMPT, QUICK_PROMPTS } from '../lib/constants'
 import { callClaude, hasApiKey } from '../lib/api'
 import { load, save } from '../lib/storage'
-import { GlassCard } from '../components/ui/GlassCard'
 
 interface IntelProps {
   plan: Plan
@@ -41,7 +40,7 @@ export function Intel({ plan, readiness, decision, injury }: IntelProps) {
     setInput('')
     setLoading(true)
 
-    const ctx = `\nSITREP: Día ${plan.day}, Sem ${plan.week}, ${plan.phaseName}, ${plan.split}. Readiness: ${readiness.score}/100. ACWR: ${readiness.acwr.toFixed(2)}. Injury Risk: ${injury.risk}%. Decision: ${decision.mode}. Reasons: ${readiness.reasons.join('; ')}`
+    const ctx = `\nSITREP: Dia ${plan.day}, Sem ${plan.week}, ${plan.phaseName}, ${plan.split}. Readiness: ${readiness.score}/100. ACWR: ${readiness.acwr.toFixed(2)}. Injury Risk: ${injury.risk}%. Decision: ${decision.mode}. Reasons: ${readiness.reasons.join('; ')}`
 
     try {
       const reply = await callClaude(
@@ -52,7 +51,7 @@ export function Intel({ plan, readiness, decision, injury }: IntelProps) {
       setMsgs(final)
       await save('chat-v5', final.slice(-40))
     } catch {
-      setMsgs(prev => [...prev, { role: 'assistant', content: '⚠ Error de conexión. Verifica tu API key.' }])
+      setMsgs(prev => [...prev, { role: 'assistant', content: 'Error de conexion. Verifica tu API key.' }])
     }
     setLoading(false)
   }
@@ -63,16 +62,16 @@ export function Intel({ plan, readiness, decision, injury }: IntelProps) {
       {msgs.length === 0 && (
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <div className="text-3xl mb-3">🎖️</div>
-          <div className="text-[12px] text-zinc-500 text-center mb-4 leading-relaxed">
-            Intel con readiness, ACWR, riesgo de lesión,<br />y contexto total de tu protocolo.
+          <div className="text-[15px] text-zinc-500 text-center mb-6 leading-relaxed">
+            Intel con readiness, ACWR, riesgo de lesion,<br />y contexto total de tu protocolo.
           </div>
 
           {!hasApiKey() && (
-            <GlassCard className="p-3 mb-4 w-full text-center">
-              <div className="text-[10px] text-zinc-500">
+            <div className="bg-[#1c1c1e] rounded-2xl p-4 mb-5 w-full text-center">
+              <div className="text-[13px] text-zinc-500">
                 Configura tu API key en ajustes para usar Intel
               </div>
-            </GlassCard>
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-2 w-full">
@@ -80,7 +79,7 @@ export function Intel({ plan, readiness, decision, injury }: IntelProps) {
               <button
                 key={i}
                 onClick={() => { setInput(q); send(q) }}
-                className="text-left text-[10px] text-zinc-500 bg-[#0d0d0d]/80 border border-white/[0.06] p-2.5 rounded-xl hover:border-white/10 transition-colors"
+                className="press text-left text-[13px] text-zinc-400 bg-[#1c1c1e] p-3 rounded-xl active:scale-[0.97] transition-transform"
               >
                 {q}
               </button>
@@ -99,10 +98,10 @@ export function Intel({ plan, readiness, decision, injury }: IntelProps) {
             className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[88%] px-3.5 py-2.5 text-[12px] leading-relaxed rounded-2xl whitespace-pre-wrap ${
+              className={`max-w-[88%] px-4 py-3 text-[15px] leading-relaxed whitespace-pre-wrap ${
                 m.role === 'user'
-                  ? 'bg-[#c9a227]/10 border border-[#c9a227]/20 text-zinc-200 rounded-br-md'
-                  : 'bg-[#0d0d0d]/80 border border-white/[0.06] text-zinc-300 rounded-bl-md'
+                  ? 'bg-[#ffd60a]/10 text-white rounded-[20px] rounded-br-md'
+                  : 'bg-[#1c1c1e] text-zinc-300 rounded-[20px] rounded-bl-md'
               }`}
             >
               {m.content}
@@ -112,7 +111,7 @@ export function Intel({ plan, readiness, decision, injury }: IntelProps) {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-[#0d0d0d]/80 border border-white/[0.06] rounded-2xl rounded-bl-md px-4 py-3">
+            <div className="bg-[#1c1c1e] rounded-[20px] rounded-bl-md px-4 py-3">
               <div className="flex gap-1.5">
                 {[0, 1, 2].map(i => (
                   <motion.div
@@ -137,15 +136,15 @@ export function Intel({ plan, readiness, decision, injury }: IntelProps) {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
           placeholder="Reporta, consulta..."
-          className="flex-1 bg-[#0d0d0d] border border-white/[0.06] text-zinc-200 px-4 py-3 text-[12px] rounded-xl outline-none focus:border-[#c9a227]/30 transition-colors"
+          className="flex-1 bg-[#1c1c1e] text-white px-4 py-3 text-[15px] rounded-full outline-none"
         />
         <button
           onClick={() => send()}
           disabled={loading || !input.trim()}
-          className="px-5 py-3 rounded-xl text-[12px] font-black font-mono transition-all active:scale-95 disabled:opacity-30"
-          style={{ background: '#c9a227', color: '#000' }}
+          className="press px-5 py-3 rounded-full text-[15px] font-bold transition-all active:scale-95 disabled:opacity-30"
+          style={{ background: 'linear-gradient(135deg, #ffd60a, #ff9f0a)', color: '#000' }}
         >
-          →
+          ↑
         </button>
       </div>
     </div>

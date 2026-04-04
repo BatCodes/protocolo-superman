@@ -4,9 +4,6 @@ import type { HealthData, MedReport } from '../lib/types'
 import { HEALTH_CATEGORIES, AI_SYSTEM_PROMPT } from '../lib/constants'
 import { callClaude, fileToBase64, hasApiKey } from '../lib/api'
 import { save } from '../lib/storage'
-import { GlassCard } from '../components/ui/GlassCard'
-import { MetricCard } from '../components/ui/MetricCard'
-import { Section } from '../components/ui/Section'
 
 interface ReconProps {
   hd: HealthData
@@ -16,6 +13,33 @@ interface ReconProps {
 }
 
 const TODAY = new Date().toISOString().slice(0, 10)
+
+function MiniSparkline({ data, color }: { data: number[]; color: string }) {
+  if (data.length < 2) return null
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const range = max - min || 1
+  const w = 48
+  const h = 20
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w
+    const y = h - ((v - min) / range) * h
+    return `${x},${y}`
+  }).join(' ')
+
+  return (
+    <svg width={w} height={h} className="flex-shrink-0">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 
 export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -50,7 +74,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
           role: 'user',
           content: [
             { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } },
-            { type: 'text', text: 'Analiza analítica. Rangos ÓPTIMOS deportivos. Briefing militar.' },
+            { type: 'text', text: 'Analiza analitica. Rangos OPTIMOS deportivos. Briefing militar.' },
           ] as any,
         }],
         AI_SYSTEM_PROMPT,
@@ -60,7 +84,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
       setMedReports(updatedReports)
       await save('med-reports', updatedReports)
     } catch {
-      setPdfResult('⚠ Error analizando PDF. Verifica tu API key.')
+      setPdfResult('Error analizando PDF. Verifica tu API key.')
     }
     setPdfLoading(false)
   }
@@ -68,50 +92,74 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
   const filledCount = Object.keys(hd).filter(k => (hd[k] || []).length > 0).length
 
   return (
-    <div className="pb-28 space-y-3">
-      {/* Health source indicator */}
-      <GlassCard className="p-3.5 flex justify-between items-center">
+    <div className="pb-28 space-y-4">
+      {/* Health summary */}
+      <div className="bg-[#1c1c1e] rounded-2xl px-4 py-3 flex justify-between items-center">
         <div>
-          <div className="text-[12px] font-bold text-zinc-200">Métricas de Salud</div>
-          <div className="text-[9px] text-zinc-500">Entrada manual · {filledCount}/{HEALTH_CATEGORIES.length} activas</div>
+          <div className="text-[15px] font-semibold text-white">Metricas de Salud</div>
+          <div className="text-[13px] text-zinc-500">Entrada manual · {filledCount}/{HEALTH_CATEGORIES.length} activas</div>
         </div>
         <div
-          className="px-2.5 py-1 rounded-lg text-[8px] font-black font-mono"
-          style={{ background: 'rgba(22,163,74,0.15)', color: '#16a34a' }}
+          className="px-3 py-1.5 rounded-xl text-[11px] font-semibold mono"
+          style={{ background: 'rgba(48,209,88,0.15)', color: '#30d158' }}
         >
           MANUAL
         </div>
-      </GlassCard>
+      </div>
 
-      {/* Metrics grid */}
-      <Section title="MÉTRICAS" right={`${filledCount}/${HEALTH_CATEGORIES.length}`} />
-      <div className="grid grid-cols-2 gap-2">
-        {HEALTH_CATEGORIES.map(m => {
+      {/* Metrics as iOS grouped list */}
+      <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
+        Metricas — {filledCount}/{HEALTH_CATEGORIES.length}
+      </p>
+      <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+        {HEALTH_CATEGORIES.map((m, idx) => {
           const entries = hd[m.id] || []
           const lastValue = entries.length > 0 ? entries[entries.length - 1].v : null
           const trend = entries.slice(-14).map(e => e.v)
           const isEditing = editingId === m.id
+          const isLast = idx === HEALTH_CATEGORIES.length - 1
 
           return (
             <div key={m.id}>
-              <MetricCard
-                label={m.l}
-                value={lastValue}
-                unit={m.u}
-                color={m.c}
-                trend={trend}
-                isEditing={isEditing}
-                onToggleEdit={() => {
+              <div
+                className="press px-4 py-3 flex items-center justify-between"
+                style={!isLast || isEditing ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+                onClick={() => {
                   setEditingId(isEditing ? null : m.id)
                   setInputValue(lastValue ? String(lastValue) : '')
                 }}
-              />
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div
+                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ background: m.c }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[15px] text-white">{m.l}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <MiniSparkline data={trend} color={m.c} />
+                  <div className="text-right">
+                    {lastValue !== null ? (
+                      <span className="text-[15px] mono" style={{ color: m.c }}>
+                        {lastValue}<span className="text-[11px] text-zinc-500 ml-0.5">{m.u}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[13px] text-zinc-600">--</span>
+                    )}
+                  </div>
+                  <span className="text-zinc-600 text-[13px]">{isEditing ? '▾' : '›'}</span>
+                </div>
+              </div>
+
               {isEditing && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex gap-1.5 mt-1"
+                  className="px-4 py-3 flex gap-2"
+                  style={!isLast ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
                 >
                   <input
                     type="number"
@@ -121,15 +169,14 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
                     autoFocus
                     onKeyDown={e => e.key === 'Enter' && logMetric(m.id)}
                     placeholder={m.u}
-                    className="flex-1 bg-[#0d0d0d] border border-white/10 text-zinc-200 px-2.5 py-2 text-[11px] font-mono rounded-lg outline-none"
-                    style={{ borderColor: m.c + '40' }}
+                    className="flex-1 bg-[#2c2c2e] text-white px-3 py-2.5 text-[15px] mono rounded-xl outline-none"
                   />
                   <button
                     onClick={() => logMetric(m.id)}
-                    className="px-3.5 py-2 rounded-lg text-[9px] font-black font-mono"
+                    className="press px-5 py-2.5 rounded-2xl text-[13px] font-semibold mono"
                     style={{ background: m.c, color: '#000' }}
                   >
-                    LOG
+                    Log
                   </button>
                 </motion.div>
               )}
@@ -139,44 +186,51 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
       </div>
 
       {/* Blood work PDF analyzer */}
-      <Section title="LABORATORIO" color="#dc2626" />
+      <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
+        Laboratorio
+      </p>
       <input ref={pdfRef} type="file" accept="application/pdf" onChange={handlePDF} className="hidden" />
 
-      <GlassCard
-        className="p-4 text-center"
-        glowColor="#dc2626"
+      <button
+        className="press w-full bg-[#1c1c1e] rounded-2xl p-4 text-center active:scale-[0.98] transition-transform"
         onClick={() => pdfRef.current?.click()}
       >
-        <div className="text-[11px] font-bold font-mono" style={{ color: '#dc2626' }}>
-          {pdfLoading ? 'ANALIZANDO...' : '🧬 SUBIR ANALÍTICA PDF'}
+        <div className="text-[15px] font-semibold" style={{ color: '#ff453a' }}>
+          {pdfLoading ? 'Analizando...' : 'Subir Analitica PDF'}
         </div>
         {pdfLoading && (
-          <div className="text-[9px] text-zinc-500 mt-1 animate-pulse">
+          <div className="text-[13px] text-zinc-500 mt-1 animate-pulse">
             Procesando con IA...
           </div>
         )}
-      </GlassCard>
+      </button>
 
       {pdfResult && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <GlassCard className="p-3.5" glowColor="#dc262620">
-            <div className="text-[11px] text-zinc-200 leading-relaxed whitespace-pre-wrap">{pdfResult}</div>
-          </GlassCard>
+          <div className="bg-[#1c1c1e] rounded-2xl p-4">
+            <div className="text-[14px] text-white leading-relaxed whitespace-pre-wrap">{pdfResult}</div>
+          </div>
         </motion.div>
       )}
 
       {/* Previous reports */}
       {medReports.length > 0 && (
         <>
-          <Section title="HISTORIAL" color="#dc2626" right={`${medReports.length} reportes`} />
-          {medReports.slice(-3).reverse().map((r, i) => (
-            <GlassCard key={i} className="p-3">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] text-zinc-400 font-mono">{r.date}</span>
-                <span className="text-[9px] text-zinc-600 font-mono">{r.filename}</span>
+          <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
+            Historial — {medReports.length} reportes
+          </p>
+          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+            {medReports.slice(-3).reverse().map((r, i) => (
+              <div
+                key={i}
+                className="px-4 py-3 flex justify-between items-center"
+                style={i < Math.min(medReports.length, 3) - 1 ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+              >
+                <span className="text-[15px] text-white mono">{r.date}</span>
+                <span className="text-[13px] text-zinc-600">{r.filename}</span>
               </div>
-            </GlassCard>
-          ))}
+            ))}
+          </div>
         </>
       )}
     </div>
