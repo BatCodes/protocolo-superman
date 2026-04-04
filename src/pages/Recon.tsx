@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Chart } from '../components/ui/Chart'
 import type { HealthData, MedReport } from '../lib/types'
@@ -43,6 +43,24 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
 }
 
 export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
+  const [healthBriefing, setHealthBriefing] = useState<string | null>(null)
+  const [hbLoading, setHbLoading] = useState(false)
+
+  useEffect(() => {
+    if (!hasApiKey() || healthBriefing) return
+    setHbLoading(true)
+    const filledMetrics = Object.keys(hd).filter(k => (hd[k] || []).length > 0)
+    const lastWeight = (hd.weight || []).slice(-1)[0]?.v
+    const lastSleep = (hd.sleep || []).slice(-1)[0]?.v
+    const lastHRV = (hd.hrv || []).slice(-1)[0]?.v
+    callClaude(
+      [{ role: 'user', content: `BRIEFING DE SALUD. Métricas activas: ${filledMetrics.join(', ')}. Último peso: ${lastWeight || 'N/A'}kg. Último sueño: ${lastSleep || 'N/A'}h. Último HRV: ${lastHRV || 'N/A'}ms. Identifica qué métricas faltan por registrar y qué priorizar. 60 palabras máx.` }],
+      'Eres un médico deportivo. Briefing ultra-conciso de métricas de salud.',
+      250
+    ).then(t => { setHealthBriefing(t); setHbLoading(false) })
+      .catch(() => setHbLoading(false))
+  }, [])
+
   const [editingId, setEditingId] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState('')
   const [pdfLoading, setPdfLoading] = useState(false)
@@ -95,6 +113,18 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
 
   return (
     <div className="pb-28 space-y-4">
+      {/* AI Health Briefing */}
+      {(healthBriefing || hbLoading) && (
+        <div className="bg-[#1c1c1e] rounded-2xl p-4 mb-4">
+          <div className="text-[13px] text-zinc-500 mb-2">IA · Análisis de Salud</div>
+          {hbLoading ? (
+            <div className="text-[13px] text-zinc-600 animate-pulse">Analizando métricas...</div>
+          ) : (
+            <div className="text-[14px] text-zinc-300 leading-relaxed whitespace-pre-wrap">{healthBriefing}</div>
+          )}
+        </div>
+      )}
+
       {/* Health summary */}
       <div className="bg-[#1c1c1e] rounded-2xl px-4 py-3 flex justify-between items-center">
         <div>

@@ -40,6 +40,9 @@ const SEPARATOR = { borderBottom: '0.33px solid rgba(255,255,255,0.08)' }
 type ModalView = 'search' | 'barcode' | 'quickadd' | 'ai-scan' | 'food-detail'
 
 export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, toggle: _toggle, mealPlan }: FuelProps) {
+  const [nutritionBriefing, setNutritionBriefing] = useState<string | null>(null)
+  const [nbLoading, setNbLoading] = useState(false)
+
   // ── Diary state ──
   const [diary, setDiary] = useState<DiaryEntry[]>([])
   const [collapsedMeals, setCollapsedMeals] = useState<Record<MealSlot, boolean>>({
@@ -123,6 +126,18 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
     fat: Math.round(macroTargets.fat * 1.1),
     water: macroTargets.water,
   }
+
+  useEffect(() => {
+    if (!hasApiKey() || nutritionBriefing) return
+    setNbLoading(true)
+    const mealsDone = mealPlan.filter((_, i) => checks[`meal-${i}`]).length
+    callClaude(
+      [{ role: 'user', content: `BRIEFING NUTRICIONAL. Objetivo: ${activeDayMacros.kcal}kcal, ${activeDayMacros.protein}P, ${activeDayMacros.carbs}C, ${activeDayMacros.fat}G. Comidas completadas: ${mealsDone}/${mealPlan.length}. Día ${selectedDay.isTraining ? 'de entrenamiento' : 'de descanso'}. Dame 3 bullets de prioridad nutricional para el resto del día. 60 palabras máx.` }],
+      'Eres un nutricionista deportivo élite. Ultra-conciso.',
+      250
+    ).then(t => { setNutritionBriefing(t); setNbLoading(false) })
+      .catch(() => setNbLoading(false))
+  }, [])
 
   // ── Today's diary entries ──
   const todayEntries = diary.filter(e => e.date === TODAY)
@@ -484,6 +499,18 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
           )
         })}
       </div>
+
+      {/* AI Nutrition Briefing */}
+      {(nutritionBriefing || nbLoading) && (
+        <div className="bg-[#1c1c1e] rounded-2xl p-4 mb-4">
+          <div className="text-[13px] text-zinc-500 mb-2">IA · Briefing Nutricional</div>
+          {nbLoading ? (
+            <div className="text-[13px] text-zinc-600 animate-pulse">Analizando nutrición...</div>
+          ) : (
+            <div className="text-[14px] text-zinc-300 leading-relaxed whitespace-pre-wrap">{nutritionBriefing}</div>
+          )}
+        </div>
+      )}
 
       {/* ═══════════════════ MEAL SECTIONS ═══════════════════ */}
       {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealSlot[]).map(slot => {

@@ -10,6 +10,9 @@ import { Recon } from './pages/Recon'
 import { Intel } from './pages/Intel'
 import { Settings } from './pages/Settings'
 import { Onboarding } from './pages/Onboarding'
+import Report from './pages/Report'
+import { computeHealthScore } from './engines/healthScore'
+import { generateInsights, generateWeeklyReportData } from './engines/digitalTwin'
 import {
   LayoutGrid,
   Dumbbell,
@@ -17,11 +20,13 @@ import {
   Heart,
   MessageCircle,
   Settings as SettingsIcon,
+  FileText,
 } from 'lucide-react'
 
 export default function App() {
   const app = useApp()
   const [showSettings, setShowSettings] = useState(false)
+  const [showReport, setShowReport] = useState(false)
 
   // Loading
   if (!app.loaded) {
@@ -65,8 +70,24 @@ export default function App() {
     return <Onboarding onComplete={app.saveProfile} />
   }
 
+  const healthScore = computeHealthScore(app.hd, app.wkLog, app.checks, app.profile?.age || 25, app.readiness.score)
+  const insights = generateInsights(app.hd, app.wkLog, healthScore, app.readiness, app.plan)
+  const weeklyReport = generateWeeklyReportData(app.hd, app.wkLog, healthScore, app.plan)
+
   if (showSettings) {
     return <Settings onClose={() => setShowSettings(false)} />
+  }
+
+  if (showReport) {
+    return <Report
+      onClose={() => setShowReport(false)}
+      healthScore={healthScore}
+      report={weeklyReport}
+      insights={insights}
+      profile={app.profile}
+      hd={app.hd}
+      plan={app.plan}
+    />
   }
 
   const readyColor = app.readiness.score >= 70 ? '#30d158' : app.readiness.score >= 50 ? '#ff9f0a' : '#ff453a'
@@ -99,6 +120,13 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setShowReport(true)}
+              className="w-[30px] h-[30px] rounded-full flex items-center justify-center press"
+              style={{ background: 'rgba(255,255,255,0.08)' }}
+            >
+              <FileText size={15} strokeWidth={1.8} className="text-zinc-400" />
+            </button>
             <button
               onClick={() => setShowSettings(true)}
               className="w-[30px] h-[30px] rounded-full flex items-center justify-center press"

@@ -6,6 +6,9 @@ import { save } from '../lib/storage'
 import { getExerciseHistory, getProgressionSuggestion, getWarmupSets } from '../lib/exercises'
 import { getGuide } from '../lib/exerciseGuide'
 import { MuscleMap } from '../components/ui/MuscleMap'
+import { ExerciseAnimation } from '../components/ui/ExerciseAnimation'
+import { PlateCalculator } from '../components/ui/PlateCalculator'
+import { callClaude, hasApiKey } from '../lib/api'
 import { Info } from 'lucide-react'
 
 interface CombatProps {
@@ -16,6 +19,30 @@ interface CombatProps {
 }
 
 const TODAY = new Date().toISOString().slice(0, 10)
+
+const EXERCISE_VIDEOS: Record<string, string> = {
+  'Bench Press': 'rT7DgCr-3pg',
+  'OHP': 'QAQ64hK4Xxs',
+  'Incline DB Press': '8iPEnn-ltC8',
+  'Weighted Dips': '2z8JmcrW-As',
+  'Lateral Raise': '3VcKaXpzqRo',
+  'Tricep Ext': '2-LAMcpzODU',
+  'Chest Fly': 'eozdVDA78K0',
+  'Deadlift': 'op9kVnSso6Q',
+  'Barbell Row': 'FWJR5Ve8bnQ',
+  'Weighted Pull-ups': 'eGo4IYlbE5g',
+  'Face Pulls': 'rep-qVOkqgk',
+  'Heavy Shrugs': 'cJRVVxmYR8w',
+  'BB Curl': 'kwG2ipFRgFo',
+  'Hammer Curl': 'zC3nLlEvin4',
+  'Back Squat': 'bEv6CCg2BC8',
+  'RDL': 'jEy_czb3RKA',
+  'Leg Press': 'IZxyjW7MPJQ',
+  'Lunges': 'D7KaRcUTQeE',
+  'Leg Curl': '1Tq3QdYUuHs',
+  'Calf Raise': '-M4-G8p8fmc',
+  'Hanging Leg Raise': 'hdng3Nm1x_E',
+}
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -40,6 +67,8 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
   const [sessionElapsed, setSessionElapsed] = useState(0)
   const [expandedWarmups, setExpandedWarmups] = useState<Record<number, boolean>>({})
   const [openGuide, setOpenGuide] = useState<number | null>(null)
+  const [combatBriefing, setCombatBriefing] = useState<string | null>(null)
+  const [cbLoading, setCbLoading] = useState(false)
 
   const sessionStartRef = useRef<number | null>(null)
   const sessionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -85,6 +114,18 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
       }
     }
   }, [restTimer])
+
+  useEffect(() => {
+    if (!hasApiKey() || combatBriefing) return
+    setCbLoading(true)
+    const todaySetsCount = Object.entries(wkLog).filter(([k]) => k.startsWith(TODAY)).reduce((sum, [, s]) => sum + s.length, 0)
+    callClaude(
+      [{ role: 'user', content: `BRIEFING DE ENTRENO. Split: ${split}. Decision engine: ${decision.mode} — ${decision.action}. Mods: ${decision.mods.join(', ')}. Sets completados hoy: ${todaySetsCount}. Dame 3-4 bullets de qué priorizar en esta sesión. Máximo 80 palabras.` }],
+      'Eres un coach de fuerza élite. Briefing pre-sesión ultra-conciso.',
+      300
+    ).then(t => { setCombatBriefing(t); setCbLoading(false) })
+      .catch(() => setCbLoading(false))
+  }, [])
 
   const startRestTimer = useCallback((isCompound: boolean) => {
     if (restIntervalRef.current) {
@@ -134,6 +175,18 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           <span className="text-[13px] mono text-zinc-400">Sesion activa</span>
           <span className="text-[15px] mono font-bold text-white">{formatDuration(sessionElapsed)}</span>
+        </div>
+      )}
+
+      {/* AI Combat Briefing */}
+      {(combatBriefing || cbLoading) && (
+        <div className="bg-[#1c1c1e] rounded-2xl p-4 mb-4">
+          <div className="text-[13px] text-zinc-500 mb-2">IA · Briefing de Sesión</div>
+          {cbLoading ? (
+            <div className="text-[13px] text-zinc-600 animate-pulse">Generando briefing...</div>
+          ) : (
+            <div className="text-[14px] text-zinc-300 leading-relaxed whitespace-pre-wrap">{combatBriefing}</div>
+          )}
         </div>
       )}
 
@@ -275,10 +328,27 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                         className="overflow-hidden"
                       >
                         <div className="pt-3 pb-1" style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}>
+                          {/* Animated exercise demo */}
+                          <ExerciseAnimation exercise={ex.n} size={100} />
+
                           {/* Muscle Map */}
                           <div className="flex justify-center mb-3">
                             <MuscleMap muscleIds={guide.muscleIds} color="#30d158" size={100} />
                           </div>
+
+                          {/* Video tutorial */}
+                          {EXERCISE_VIDEOS[ex.n] && (
+                            <div className="mt-3 rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                              <iframe
+                                src={`https://www.youtube.com/embed/${EXERCISE_VIDEOS[ex.n]}?rel=0&modestbranding=1`}
+                                title={`Cómo hacer ${ex.n}`}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                className="w-full h-full border-0"
+                                loading="lazy"
+                              />
+                            </div>
+                          )}
 
                           {/* Muscles */}
                           <div className="mb-3">
@@ -444,6 +514,15 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                       + SET
                     </button>
                   </div>
+
+                  {/* Plate Calculator for compound exercises */}
+                  {ex.t === 'T-DRIVER' && sets.length > 0 && (
+                    <div className="mt-3" style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}>
+                      <div className="pt-3">
+                        <PlateCalculator weight={sets[sets.length - 1].w} />
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )
             })}
