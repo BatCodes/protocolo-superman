@@ -33,7 +33,15 @@ interface Message {
 
 interface ApiResponse {
   content: { type: string; text: string }[]
+  error?: { type: string; message: string }
 }
+
+// Models to try in order of preference
+const MODELS = [
+  'claude-sonnet-4-20250514',
+  'claude-3-5-sonnet-20241022',
+  'claude-3-haiku-20240307',
+]
 
 export async function callClaude(
   messages: Message[],
@@ -43,29 +51,59 @@ export async function callClaude(
   const apiKey = getApiKey()
   if (!apiKey) throw new Error('API key not configured')
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: maxTokens,
-      system,
-      messages,
-    }),
-  })
+  let lastError = ''
 
-  if (!res.ok) {
-    const error = await res.text()
-    throw new Error(`API error ${res.status}: ${error}`)
+  for (const model of MODELS) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: maxTokens,
+          system,
+          messages,
+        }),
+      })
+
+      if (res.ok) {
+        const data: ApiResponse = await res.json()
+        if (data.content) {
+          return data.content.map(c => c.text || '').join('') || ''
+        }
+      }
+
+      const errorBody = await res.text()
+      lastError = `${res.status}: ${errorBody}`
+
+      // If auth error, don't try other models
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(`API key inválida (${res.status})`)
+      }
+
+      // If model not found, try next model
+      if (res.status === 404 || errorBody.includes('model')) {
+        console.warn(`Model ${model} not available, trying next...`)
+        continue
+      }
+
+      // Other errors
+      throw new Error(lastError)
+    } catch (err) {
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        // Network/CORS error
+        throw new Error('Error de red. Verifica tu conexión a internet.')
+      }
+      throw err
+    }
   }
 
-  const data: ApiResponse = await res.json()
-  return data.content?.map(c => c.text || '').join('') || ''
+  throw new Error(`Ningún modelo disponible. Último error: ${lastError}`)
 }
 
 export function fileToBase64(file: File): Promise<string> {

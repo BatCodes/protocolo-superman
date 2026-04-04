@@ -50,8 +50,9 @@ export function Intel({ plan, readiness, decision, injury }: IntelProps) {
       const final = [...updated, { role: 'assistant' as const, content: reply }]
       setMsgs(final)
       await save('chat-v5', final.slice(-40))
-    } catch {
-      setMsgs(prev => [...prev, { role: 'assistant', content: 'Error de conexion. Verifica tu API key.' }])
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido'
+      setMsgs(prev => [...prev, { role: 'assistant', content: `⚠ ${msg}` }])
     }
     setLoading(false)
   }
