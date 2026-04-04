@@ -170,6 +170,7 @@ export default function App() {
                 scannedMeals={app.scannedMeals} setScannedMeals={app.setScannedMeals}
                 macroTargets={app.macros} checks={app.checks} toggle={app.toggle}
                 mealPlan={app.mealPlan} profile={app.profile}
+                wkLog={app.wkLog} plan={app.plan}
               />
             )}
             {app.tab === 'recon' && (

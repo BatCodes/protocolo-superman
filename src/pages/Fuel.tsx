@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { ScannedMeal } from '../lib/types'
 import type { MealPlan } from '../lib/profile'
 import { generateMealPlan, computeMacros } from '../lib/profile'
+import { WORKOUTS } from '../lib/constants'
+import { getExerciseHistory, getProgressionSuggestion } from '../lib/exercises'
 import type { FoodItem, DiaryEntry } from '../lib/fooddb'
 import { searchFoods, lookupBarcode, getRecentFoods, getDiaryTotals, quickAddFood } from '../lib/fooddb'
 import { callClaude, fileToBase64, hasApiKey } from '../lib/api'
@@ -17,6 +19,8 @@ interface FuelProps {
   toggle: (id: string) => void
   mealPlan: MealPlan[]
   profile: import('../lib/profile').UserProfile | null
+  wkLog: import('../lib/types').WorkoutLog
+  plan: import('../lib/types').Plan
 }
 
 type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snacks'
@@ -41,7 +45,7 @@ const SEPARATOR = { borderBottom: '0.33px solid rgba(255,255,255,0.08)' }
 
 type ModalView = 'search' | 'barcode' | 'quickadd' | 'ai-scan' | 'food-detail'
 
-export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, toggle: _toggle, mealPlan, profile }: FuelProps) {
+export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, toggle: _toggle, mealPlan, profile, wkLog, plan }: FuelProps) {
   const [nutritionBriefing, setNutritionBriefing] = useState<string | null>(null)
   const [nbLoading, setNbLoading] = useState(false)
 
@@ -527,27 +531,91 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
           Plan {isViewingToday ? 'de Hoy' : `${selectedDay.dayLabel} ${selectedDay.dayNum}`}
         </div>
         <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
-          {dayMealPlan.map((meal, i, arr) => (
-            <div
-              key={i}
-              className="px-4 py-3 flex items-center gap-3"
-              style={{ borderBottom: i < arr.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none' }}
-            >
-              <span className="text-xl flex-shrink-0">{meal.icon}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className="text-[15px] text-white font-medium">{meal.title}</span>
-                  <span className="text-[12px] mono text-zinc-500">{meal.time}</span>
+          {dayMealPlan.map((meal, i, arr) => {
+            // For training entries, compute exercise prescriptions
+            const isTrainingEntry = meal.icon === '🏋️' && selectedDay.isTraining
+            const daySplit = selectedDay.split
+            const dayExercises = isTrainingEntry ? (WORKOUTS[daySplit] || []) : []
+
+            return (
+              <div
+                key={i}
+                className="px-4 py-3"
+                style={{ borderBottom: i < arr.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none' }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xl flex-shrink-0">{meal.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[15px] text-white font-medium">{meal.title}</span>
+                      <span className="text-[12px] mono text-zinc-500">{meal.time}</span>
+                    </div>
+                    <div className="text-[13px] text-zinc-500 mt-0.5 leading-snug">{meal.desc}</div>
+                  </div>
+                  {meal.type === 'meal' && meal.kcalPct && (
+                    <span className="text-[11px] mono px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: '#30d15815', color: '#30d158' }}>
+                      ~{Math.round((meal.kcalPct / 100) * activeDayMacros.kcal)}
+                    </span>
+                  )}
                 </div>
-                <div className="text-[13px] text-zinc-500 mt-0.5 leading-snug">{meal.desc}</div>
+
+                {/* Workout prescription for training entries */}
+                {isTrainingEntry && dayExercises.length > 0 && (
+                  <div className="mt-3 ml-9 space-y-1.5">
+                    <div className="text-[11px] text-zinc-600 uppercase tracking-wider mb-2">
+                      {daySplit} · {dayExercises.length} ejercicios
+                    </div>
+                    {dayExercises.map((ex, ei) => {
+                      const history = getExerciseHistory(wkLog, daySplit, ei)
+                      const lastSet = history.length > 0 ? history[history.length - 1].sets : []
+                      const lastBest = lastSet.length > 0 ? lastSet.reduce((best, s) => s.w > best.w ? s : best, lastSet[0]) : null
+                      const progression = getProgressionSuggestion(history)
+
+                      // Phase-based intensity modifier
+                      const phaseModifier = plan.phase === 1 ? 0.85 : plan.phase === 4 ? 0.9 : 1.0
+
+                      // Recommended weight
+                      let recWeight: number | null = null
+                      if (progression) {
+                        recWeight = Math.round(progression.weight * phaseModifier / 2.5) * 2.5
+                      } else if (lastBest) {
+                        recWeight = Math.round(lastBest.w * phaseModifier / 2.5) * 2.5
+                      }
+
+                      return (
+                        <div key={ei} className="flex items-center justify-between py-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {ex.t === 'T-DRIVER' && (
+                              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#ffd60a' }} />
+                            )}
+                            <span className={`text-[13px] ${ex.t === 'T-DRIVER' ? 'text-white font-medium' : 'text-zinc-400'} truncate`}>
+                              {ex.n}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-[11px] mono text-zinc-500">{ex.s}×{ex.r}</span>
+                            {recWeight ? (
+                              <span className="text-[12px] mono font-semibold px-2 py-0.5 rounded-full" style={{ background: '#ffd60a15', color: '#ffd60a' }}>
+                                {recWeight}kg
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-zinc-600">—</span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {plan.phase === 1 && (
+                      <div className="text-[10px] text-zinc-600 mt-1">Foundation: pesos al 85% para perfeccionar técnica</div>
+                    )}
+                    {plan.phase === 4 && (
+                      <div className="text-[10px] text-zinc-600 mt-1">Cut: mantener intensidad al 90%, priorizar retención muscular</div>
+                    )}
+                  </div>
+                )}
               </div>
-              {meal.type === 'meal' && meal.kcalPct && (
-                <span className="text-[11px] mono px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: '#30d15815', color: '#30d158' }}>
-                  ~{Math.round((meal.kcalPct / 100) * activeDayMacros.kcal)}
-                </span>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
         <div className="text-[12px] text-zinc-600 mt-2 px-1">
           {selectedDay.isTraining ? '🏋️ Día de entrenamiento — surplus calórico activo' : '🔄 Día de descanso — macros ajustados'}
