@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import type { Plan, ReadinessResult, DecisionResult, InjuryResult, BloodResult, PredictionResult, HealthData, WorkoutLog, ScannedMeal } from '../lib/types'
 import type { MealPlan } from '../lib/profile'
 import { SUPPLEMENTS } from '../lib/constants'
 import { Ring } from '../components/ui/Ring'
 import { Chart } from '../components/ui/Chart'
-import { callClaude, hasApiKey } from '../lib/api'
+// API imports available for future AI briefings
+
+import { computeSupplementHistory, generateStackSummary, type SupplementHistory } from '../engines/supplementTracker'
+import { computeStrain, computeEnergyBank } from '../engines/strain'
+import { MuscleHeatmap } from '../components/ui/MuscleHeatmap'
+import { HealthJournal } from '../components/ui/HealthJournal'
 
 interface DashboardProps {
   plan: Plan
@@ -123,43 +128,20 @@ export function Dashboard({
   const currentMeal = getCurrentMealIndex(mealPlan)
   const mc = ({ PUSH: '#30d158', NORMAL: '#ffd60a', REDUCE: '#ff9f0a', RECOVER: '#bf5af2', DELOAD: '#64d2ff', PROTECT: '#ff453a' } as Record<string, string>)[decision.mode] || '#ffd60a'
 
-  const [supplementAnalysis, setSupplementAnalysis] = useState<string | null>(null)
-  const [suppAnalysisLoading, setSuppAnalysisLoading] = useState(false)
+  // Strain + Energy
+  const strain = computeStrain(hd, wkLog)
+  const energy = computeEnergyBank(readiness.score, hd, strain)
 
-  const generateSupplementAnalysis = async () => {
-    if (!hasApiKey()) return
-    setSuppAnalysisLoading(true)
-    try {
-      const activeSupps = SUPPLEMENTS
-        .filter(s => s.ph <= plan.phase)
-        .map(s => `${s.n} ${s.d} (evidencia: ${s.ev}, ${s.tb ? 'T-booster' : 'general'})`)
-        .join(', ')
+  // Supplement history (automatic, not button-based)
+  const [suppHistory, setSuppHistory] = useState<SupplementHistory[]>([])
+  const [stackSummary, setStackSummary] = useState('')
 
-      const prompt = `ANÁLISIS DE STACK DE SUPLEMENTOS.
-Semana ${plan.week} del protocolo. Fase ${plan.phase} (${plan.phaseName}).
-Stack activo: ${activeSupps}
-
-Analiza:
-1) EFECTOS ACUMULADOS: Qué efectos se esperan después de ${plan.week} semanas con este stack
-2) INTERACCIONES: Sinergias y posibles conflictos entre suplementos
-3) TIMING ÓPTIMO: Cuándo tomar cada uno para máxima absorción
-4) CICLADO: Cuáles necesitan ciclarse y cuándo (ashwagandha, tongkat ali, etc.)
-5) MARCADORES: Qué valores vigilar en la próxima analítica por este stack
-6) OPTIMIZACIÓN: Sugerencias para mejorar el stack en esta fase
-
-Máximo 250 palabras. Español. Directo. Basado en evidencia.`
-
-      const result = await callClaude(
-        [{ role: 'user', content: prompt }],
-        'Eres un farmacólogo deportivo y nutricionista experto en suplementación basada en evidencia. Solo recomiendas suplementos legales y seguros.',
-        1000
-      )
-      setSupplementAnalysis(result)
-    } catch {
-      setSupplementAnalysis('Error generando análisis. Verifica tu API key.')
-    }
-    setSuppAnalysisLoading(false)
-  }
+  useEffect(() => {
+    computeSupplementHistory(plan, checks).then(history => {
+      setSuppHistory(history)
+      setStackSummary(generateStackSummary(history))
+    })
+  }, [plan.day, plan.phase, checks])
 
   return (
     <div className="pb-28 bg-black min-h-screen">
@@ -273,6 +255,27 @@ Máximo 250 palabras. Español. Directo. Basado en evidencia.`
         </div>
       </motion.div>
 
+      {/* ── Strain + Energy ── */}
+      <motion.div custom={2.5} variants={fadeIn} initial="hidden" animate="show" className="mt-4 px-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-[#1c1c1e] rounded-2xl p-4">
+            <div className="text-[13px] text-zinc-500 mb-1">Strain</div>
+            <div className="text-[28px] font-black mono" style={{ color: strain.level === 'overreaching' ? '#ff453a' : strain.level === 'high' ? '#ff9f0a' : '#30d158' }}>
+              {strain.score.toFixed(1)}
+            </div>
+            <div className="text-[11px] text-zinc-600">/21 · {strain.level}</div>
+          </div>
+          <div className="bg-[#1c1c1e] rounded-2xl p-4">
+            <div className="text-[13px] text-zinc-500 mb-1">Energía</div>
+            <div className="text-[28px] font-black mono" style={{ color: energy.color }}>
+              {energy.level}%
+            </div>
+            <div className="text-[11px] text-zinc-600">{energy.status}</div>
+          </div>
+        </div>
+        <div className="text-[12px] text-zinc-500 mt-2 px-1">{energy.recommendation}</div>
+      </motion.div>
+
       {/* ═══════════════════════════════════════════════
           4. COMIDAS DE HOY
           ═══════════════════════════════════════════════ */}
@@ -374,6 +377,14 @@ Máximo 250 palabras. Español. Directo. Basado en evidencia.`
               unit=" kg"
             />
           </div>
+        </div>
+      </motion.div>
+
+      {/* ── Muscle Progress Heatmap ── */}
+      <motion.div custom={5.5} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
+        <div className="text-[20px] font-bold text-white mb-3">Desarrollo Muscular</div>
+        <div className="bg-[#1c1c1e] rounded-2xl p-4">
+          <MuscleHeatmap wkLog={wkLog} size={140} />
         </div>
       </motion.div>
 
@@ -538,45 +549,46 @@ Máximo 250 palabras. Español. Directo. Basado en evidencia.`
         </div>
       </motion.div>
 
-      {/* ── AI Supplement Intelligence ── */}
-      <motion.div custom={7.5} variants={fadeIn} initial="hidden" animate="show" className="px-4">
-        <div className="mt-6">
-          <div className="text-[20px] font-bold text-white mb-3">Análisis de Stack</div>
-          <div className="bg-[#1c1c1e] rounded-2xl p-4">
-            {/* Current stack summary */}
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {SUPPLEMENTS.filter(s => s.ph <= plan.phase).map((s, i) => (
-                <span
-                  key={i}
-                  className="text-[11px] px-2 py-0.5 rounded-full"
-                  style={{
-                    background: checks[`s-${i}`] ? '#30d15815' : '#2c2c2e',
-                    color: checks[`s-${i}`] ? '#30d158' : '#636366',
-                  }}
-                >
-                  {s.n} {s.d}
+      {/* ── Supplement Accumulation Analysis (automatic) ── */}
+      <motion.div custom={7} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
+        <div className="text-[20px] font-bold text-white mb-3">Stack · Acumulado</div>
+        <div className="text-[13px] text-zinc-500 mb-3 whitespace-pre-wrap">{stackSummary}</div>
+        <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+          {suppHistory.map((supp, i, arr) => (
+            <div key={i} className="px-4 py-3" style={{ borderBottom: i < arr.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none' }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[15px] text-white font-medium">{supp.name} <span className="text-zinc-500 text-[13px]">{supp.dosage}</span></span>
+                <span className="text-[11px] px-2 py-0.5 rounded-full mono" style={{
+                  background: supp.currentPhase === 'saturated' ? '#30d15815' : supp.currentPhase === 'cycling-needed' ? '#ff453a15' : '#ffd60a15',
+                  color: supp.currentPhase === 'saturated' ? '#30d158' : supp.currentPhase === 'cycling-needed' ? '#ff453a' : '#ffd60a',
+                }}>
+                  {supp.currentPhase === 'saturated' ? 'Saturado' : supp.currentPhase === 'cycling-needed' ? 'Ciclar' : supp.currentPhase === 'building' ? 'Cargando' : 'Inicio'}
                 </span>
+              </div>
+              {/* Progress to saturation */}
+              <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-1.5">
+                <div className="h-full rounded-full transition-all" style={{
+                  width: `${Math.min(100, (supp.daysTaken / supp.saturationDays) * 100)}%`,
+                  background: supp.isSaturated ? '#30d158' : '#ffd60a',
+                }} />
+              </div>
+              <div className="text-[11px] text-zinc-600 mono mb-1">{supp.daysTaken}d / {supp.saturationDays}d saturación · {supp.adherence}% adherencia</div>
+              {/* Latest effect */}
+              {supp.effects.length > 0 && (
+                <div className="text-[12px] text-zinc-400 leading-snug">{supp.effects[supp.effects.length - 1]}</div>
+              )}
+              {/* Warnings */}
+              {supp.warnings.filter(w => w.startsWith('⚠')).map((w, wi) => (
+                <div key={wi} className="text-[11px] mt-1" style={{ color: '#ff453a' }}>{w}</div>
               ))}
             </div>
-            <div className="text-[13px] text-zinc-500 mb-3">
-              Semana {plan.week} · Fase {plan.phase} · {SUPPLEMENTS.filter(s => s.ph <= plan.phase && checks[`s-${SUPPLEMENTS.indexOf(s)}`]).length} suplementos activos
-            </div>
-
-            {/* AI Analysis button/content */}
-            {supplementAnalysis ? (
-              <div className="text-[14px] text-zinc-300 leading-relaxed whitespace-pre-wrap">{supplementAnalysis}</div>
-            ) : (
-              <button
-                onClick={generateSupplementAnalysis}
-                disabled={suppAnalysisLoading}
-                className="press w-full py-3 rounded-xl text-[14px] font-semibold"
-                style={{ background: suppAnalysisLoading ? '#2c2c2e' : '#bf5af220', color: suppAnalysisLoading ? '#636366' : '#bf5af2' }}
-              >
-                {suppAnalysisLoading ? 'Analizando stack...' : '🧬 Analizar acumulado de suplementos'}
-              </button>
-            )}
-          </div>
+          ))}
         </div>
+      </motion.div>
+
+      {/* ── Health Journal ── */}
+      <motion.div custom={8.5} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
+        <HealthJournal />
       </motion.div>
 
       {/* ═══════════════════════════════════════════════
