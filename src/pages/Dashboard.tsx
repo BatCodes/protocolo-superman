@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import type { Plan, ReadinessResult, DecisionResult, InjuryResult, BloodResult, PredictionResult, HealthData, WorkoutLog, ScannedMeal } from '../lib/types'
-import { SUPPLEMENTS, DAILY_MEALS } from '../lib/constants'
+import type { MealPlan } from '../lib/profile'
+import { SUPPLEMENTS } from '../lib/constants'
 import { Ring } from '../components/ui/Ring'
 
 interface DashboardProps {
@@ -17,6 +18,8 @@ interface DashboardProps {
   checks: Record<string, boolean>
   toggle: (id: string) => void
   scannedMeals: ScannedMeal[]
+  mealPlan: MealPlan[]
+  macros: { kcal: number; protein: number; carbs: number; fat: number; water: number }
 }
 
 const modeColors: Record<string, string> = {
@@ -33,11 +36,11 @@ const fadeIn = {
 }
 
 // Determine which meals should be "current" based on time
-function getCurrentMealIndex(): number {
+function getCurrentMealIndex(mealPlan: MealPlan[]): number {
   const now = new Date()
   const currentMinutes = now.getHours() * 60 + now.getMinutes()
-  for (let i = DAILY_MEALS.length - 1; i >= 0; i--) {
-    const [h, m] = DAILY_MEALS[i].time.split(':').map(Number)
+  for (let i = mealPlan.length - 1; i >= 0; i--) {
+    const [h, m] = mealPlan[i].time.split(':').map(Number)
     if (currentMinutes >= h * 60 + m) return i
   }
   return 0
@@ -45,14 +48,14 @@ function getCurrentMealIndex(): number {
 
 export function Dashboard({
   plan, readiness, decision, injury, blood, predictions,
-  briefing, briefingLoading, checks, toggle,
+  briefing, briefingLoading, checks, toggle, mealPlan, macros,
 }: DashboardProps) {
   const mc = modeColors[decision.mode] || '#ffd60a'
   const readyColor = readiness.score >= 70 ? '#30d158' : readiness.score >= 50 ? '#ff9f0a' : '#ff453a'
-  const currentMeal = getCurrentMealIndex()
+  const currentMeal = getCurrentMealIndex(mealPlan)
 
   // Count checked meals today
-  const mealsChecked = DAILY_MEALS.filter((_, i) => checks[`meal-${i}`]).length
+  const mealsChecked = mealPlan.filter((_, i) => checks[`meal-${i}`]).length
 
   return (
     <div className="pb-28">
@@ -88,6 +91,11 @@ export function Dashboard({
               {m}
             </span>
           ))}
+        </div>
+
+        {/* Macro summary */}
+        <div className="text-[12px] text-zinc-500 mono mt-3">
+          {macros.kcal} kcal · {macros.protein}P · {macros.carbs}C · {macros.fat}G
         </div>
       </motion.div>
 
@@ -179,11 +187,11 @@ export function Dashboard({
             Comidas de Hoy
           </div>
           <div className="text-[13px] text-zinc-600 mono">
-            {mealsChecked}/{DAILY_MEALS.length}
+            {mealsChecked}/{mealPlan.length}
           </div>
         </div>
         <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden mx-1">
-          {DAILY_MEALS.map((meal, i) => {
+          {mealPlan.map((meal, i) => {
             const checked = checks[`meal-${i}`]
             const isPast = i < currentMeal
             const isCurrent = i === currentMeal
@@ -194,7 +202,7 @@ export function Dashboard({
                 onClick={() => toggle(`meal-${i}`)}
                 className="w-full flex items-center gap-3.5 px-4 py-3 text-left transition-colors"
                 style={{
-                  borderBottom: i < DAILY_MEALS.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none',
+                  borderBottom: i < mealPlan.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none',
                   background: isCurrent && !checked ? 'rgba(255, 214, 10, 0.04)' : 'transparent',
                 }}
               >

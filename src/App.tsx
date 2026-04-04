@@ -1,20 +1,18 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useApp } from './hooks/useApp'
-import { TABS } from './lib/constants'
 import { Ring } from './components/ui/Ring'
+import type { TabId } from './lib/types'
 import { Dashboard } from './pages/Dashboard'
 import { Combat } from './pages/Combat'
 import { Fuel } from './pages/Fuel'
 import { Recon } from './pages/Recon'
 import { Intel } from './pages/Intel'
 import { Settings } from './pages/Settings'
-
-const TODAY = new Date().toISOString().slice(0, 10)
+import { Onboarding } from './pages/Onboarding'
 
 export default function App() {
   const app = useApp()
-  const [sDate, setSDate] = useState(TODAY)
   const [showSettings, setShowSettings] = useState(false)
 
   // Loading
@@ -42,54 +40,7 @@ export default function App() {
 
   // Onboarding
   if (app.setup) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="w-full max-w-sm text-center"
-        >
-          <motion.div
-            className="w-24 h-24 mx-auto mb-8 rounded-[24px] flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(145deg, #ffd60a, #ff9f0a)',
-              boxShadow: '0 12px 40px -8px rgba(255, 214, 10, 0.25)',
-            }}
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-          >
-            <span className="text-4xl font-black text-black">S</span>
-          </motion.div>
-
-          <h1 className="text-[34px] font-bold text-white tracking-tight leading-tight">
-            Protocolo Superman
-          </h1>
-          <p className="text-[15px] text-zinc-500 mt-2 mb-10 leading-relaxed">
-            Selecciona la fecha en la que empezaste o vas a empezar el protocolo.
-          </p>
-
-          <input
-            type="date"
-            value={sDate}
-            onChange={e => setSDate(e.target.value)}
-            className="w-full bg-[#1c1c1e] text-white px-5 py-4 text-[17px] rounded-2xl outline-none text-center mb-4 mono"
-          />
-
-          <button
-            onClick={() => app.startProtocol(sDate)}
-            className="w-full py-4 rounded-2xl text-[17px] font-semibold press"
-            style={{
-              background: 'linear-gradient(135deg, #ffd60a, #ff9f0a)',
-              color: '#000',
-            }}
-          >
-            Comenzar
-          </button>
-        </motion.div>
-      </div>
-    )
+    return <Onboarding onComplete={app.saveProfile} />
   }
 
   if (showSettings) {
@@ -158,13 +109,22 @@ export default function App() {
                 checks={app.checks}
                 toggle={app.toggle}
                 scannedMeals={app.scannedMeals}
+                mealPlan={app.mealPlan}
+                macros={app.macros}
               />
             )}
             {app.tab === 'combat' && (
               <Combat plan={app.plan} wkLog={app.wkLog} setWkLog={app.setWkLog} decision={app.decision} />
             )}
             {app.tab === 'fuel' && (
-              <Fuel scannedMeals={app.scannedMeals} setScannedMeals={app.setScannedMeals} />
+              <Fuel
+                scannedMeals={app.scannedMeals}
+                setScannedMeals={app.setScannedMeals}
+                macroTargets={app.macros}
+                checks={app.checks}
+                toggle={app.toggle}
+                mealPlan={app.mealPlan}
+              />
             )}
             {app.tab === 'recon' && (
               <Recon hd={app.hd} setHd={app.setHd} medReports={app.medReports} setMedReports={app.setMedReports} />
@@ -176,23 +136,28 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {/* Tab Bar — iOS Style */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 frosted border-t border-white/[0.06] safe-bottom"
-      >
-        <div className="grid grid-cols-5 pt-1.5 pb-0.5">
-          {TABS.map(t => {
+      {/* Tab Bar — iOS Native */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 frosted border-t border-white/[0.06] safe-bottom">
+        <div className="grid grid-cols-5 pt-2 pb-1">
+          {([
+            { id: 'cmd' as TabId, label: 'Resumen', icon: (c: string) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> },
+            { id: 'combat' as TabId, label: 'Entreno', icon: (c: string) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 6.5L17.5 17.5M6.5 17.5L17.5 6.5"/><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg> },
+            { id: 'fuel' as TabId, label: 'Nutrición', icon: (c: string) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg> },
+            { id: 'recon' as TabId, label: 'Salud', icon: (c: string) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0L12 5.34l-.77-.76a5.4 5.4 0 0 0-7.65 0 5.4 5.4 0 0 0 0 7.65L12 20.65l8.42-8.42a5.4 5.4 0 0 0 0-7.65z"/></svg> },
+            { id: 'intel' as TabId, label: 'Intel', icon: (c: string) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+          ]).map(t => {
             const active = app.tab === t.id
+            const color = active ? '#ffd60a' : '#48484a'
             return (
               <button
                 key={t.id}
                 onClick={() => app.setTab(t.id)}
-                className="py-1 flex flex-col items-center gap-0.5 press"
+                className="flex flex-col items-center gap-1 press"
               >
-                <span className="text-[20px]">{t.icon}</span>
+                {t.icon(color)}
                 <span
-                  className="text-[10px] font-medium"
-                  style={{ color: active ? '#ffd60a' : '#636366' }}
+                  className="text-[10px]"
+                  style={{ color, fontWeight: active ? 600 : 400 }}
                 >
                   {t.label}
                 </span>
