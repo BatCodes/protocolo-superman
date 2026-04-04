@@ -6,6 +6,7 @@ import type { FoodItem, DiaryEntry } from '../lib/fooddb'
 import { searchFoods, lookupBarcode, getRecentFoods, getDiaryTotals, quickAddFood } from '../lib/fooddb'
 import { callClaude, fileToBase64, hasApiKey } from '../lib/api'
 import { load, save } from '../lib/storage'
+import { Ring } from '../components/ui/Ring'
 
 interface FuelProps {
   scannedMeals: ScannedMeal[]
@@ -38,7 +39,7 @@ const SEPARATOR = { borderBottom: '0.33px solid rgba(255,255,255,0.08)' }
 
 type ModalView = 'search' | 'barcode' | 'quickadd' | 'ai-scan' | 'food-detail'
 
-export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, toggle, mealPlan }: FuelProps) {
+export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, toggle: _toggle, mealPlan }: FuelProps) {
   // ── Diary state ──
   const [diary, setDiary] = useState<DiaryEntry[]>([])
   const [collapsedMeals, setCollapsedMeals] = useState<Record<MealSlot, boolean>>({
@@ -132,10 +133,22 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
   const budgetColor = kcalPct > 100 ? '#ff453a' : kcalPct > 85 ? '#ff9f0a' : '#30d158'
 
   // Water tracker
-  const waterGlasses = 8
-  const waterPerGlass = macroTargets.water / waterGlasses
-  const filledGlasses = Array.from({ length: waterGlasses }).filter((_, i) => checks[`water-${i}`]).length
-  const waterConsumed = Math.round(filledGlasses * waterPerGlass * 10) / 10
+  const [waterLog, setWaterLog] = useState<{ml: number, time: string}[]>([])
+  const [customMl, setCustomMl] = useState(250)
+
+  useEffect(() => {
+    load<{ml: number, time: string}[]>('water-' + TODAY, []).then(setWaterLog)
+  }, [])
+
+  const waterTotal = waterLog.reduce((a, e) => a + e.ml, 0)
+  const waterPct = Math.min(100, Math.round(waterTotal / (macroTargets.water * 1000) * 100))
+
+  const addWater = async (ml: number) => {
+    const entry = { ml, time: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) }
+    const updated = [...waterLog, entry]
+    setWaterLog(updated)
+    await save('water-' + TODAY, updated)
+  }
 
   // ── Meal section entries ──
   const mealEntries = (meal: MealSlot) => todayEntries.filter(e => e.meal === meal)
@@ -507,31 +520,93 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
       })}
 
       {/* ═══════════════════ WATER TRACKER ═══════════════════ */}
-      <div className="bg-[#1c1c1e] rounded-2xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">
-            Agua
+      <div className="mt-6">
+        <div className="text-[20px] font-bold text-white mb-3">Hidratación</div>
+        <div className="bg-[#1c1c1e] rounded-2xl p-4">
+          {/* Progress */}
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="text-[28px] font-black mono" style={{ color: '#64d2ff' }}>
+                {(waterTotal / 1000).toFixed(1)}L
+              </div>
+              <div className="text-[13px] text-zinc-500">
+                de {macroTargets.water}L objetivo
+              </div>
+            </div>
+            <div className="w-16 h-16">
+              <Ring pct={waterPct} size={64} strokeWidth={6} color="#64d2ff">
+                <span className="text-[11px] font-bold mono" style={{ color: '#64d2ff' }}>
+                  {waterPct}%
+                </span>
+              </Ring>
+            </div>
           </div>
-          <div className="text-[14px] mono" style={{ color: '#64d2ff' }}>
-            {waterConsumed}L / {macroTargets.water}L
+
+          {/* Progress bar */}
+          <div className="h-2 bg-white/5 rounded-full overflow-hidden mb-4">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: 'linear-gradient(90deg, #64d2ff, #0a84ff)' }}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(waterPct, 100)}%` }}
+              transition={{ duration: 0.6 }}
+            />
           </div>
-        </div>
-        <div className="flex justify-between gap-2">
-          {Array.from({ length: waterGlasses }).map((_, i) => {
-            const filled = checks[`water-${i}`]
-            return (
+
+          {/* Quick add buttons */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {[
+              { icon: '🥤', label: 'Vaso', ml: 250 },
+              { icon: '🧴', label: 'Botella', ml: 500 },
+              { icon: '💧', label: 'Grande', ml: 1500 },
+            ].map(opt => (
               <button
-                key={i}
-                onClick={() => toggle(`water-${i}`)}
-                className="flex-1 aspect-square rounded-full transition-all duration-200 active:scale-90"
-                style={{
-                  backgroundColor: filled ? '#64d2ff' : 'transparent',
-                  border: filled ? '2px solid #64d2ff' : '2px solid rgba(255,255,255,0.12)',
-                  boxShadow: filled ? '0 0 10px rgba(100,210,255,0.3)' : 'none',
-                }}
-              />
-            )
-          })}
+                key={opt.ml}
+                onClick={() => addWater(opt.ml)}
+                className="press bg-[#2c2c2e] rounded-xl py-3 text-center"
+              >
+                <div className="text-xl">{opt.icon}</div>
+                <div className="text-[13px] text-white font-medium">{opt.label}</div>
+                <div className="text-[11px] text-zinc-500 mono">{opt.ml}ml</div>
+              </button>
+            ))}
+          </div>
+
+          {/* Custom slider */}
+          <div className="flex items-center gap-3 mb-3">
+            <input
+              type="range"
+              min="50"
+              max="1000"
+              step="50"
+              value={customMl}
+              onChange={e => setCustomMl(parseInt(e.target.value))}
+              className="flex-1 h-1.5 rounded-full appearance-none"
+              style={{
+                background: `linear-gradient(to right, #64d2ff ${(customMl - 50) / 950 * 100}%, rgba(255,255,255,0.08) ${(customMl - 50) / 950 * 100}%)`,
+              }}
+            />
+            <button
+              onClick={() => addWater(customMl)}
+              className="press px-3 py-2 rounded-xl text-[13px] font-semibold"
+              style={{ background: '#64d2ff', color: '#000' }}
+            >
+              +{customMl}ml
+            </button>
+          </div>
+
+          {/* Today's log */}
+          {waterLog.length > 0 && (
+            <div className="mt-3" style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}>
+              <div className="pt-3 flex flex-wrap gap-1.5">
+                {waterLog.map((entry, i) => (
+                  <span key={i} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#64d2ff15', color: '#64d2ff' }}>
+                    {entry.time} · {entry.ml >= 1000 ? `${(entry.ml/1000).toFixed(1)}L` : `${entry.ml}ml`}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// HEALTH SCORE ENGINE — Composite health metric (0-100)
+// HEALTH SCORE ENGINE — Composite health metric (0-900)
 // Combines: body composition, cardiovascular, sleep, recovery,
 // activity, nutrition compliance, and consistency
 // ═══════════════════════════════════════════════════════════
@@ -18,7 +18,7 @@ function avg(entries: HealthEntry[]): number {
 }
 
 export interface HealthScoreBreakdown {
-  total: number              // 0-100
+  total: number              // 0-900
   composition: number        // 0-100: body fat, muscle, weight trend
   cardiovascular: number     // 0-100: RHR, HRV, SpO2
   sleep: number              // 0-100: duration, consistency
@@ -272,16 +272,16 @@ export function computeHealthScore(
   const filled = categories.filter(c => (hd[c] || []).length > 0).length
   const dataCompleteness = Math.round((filled / categories.length) * 100)
 
-  // Weighted total
+  // Weighted total on 0-900 scale (9 categories × 100 max each, weighted)
   const total = Math.round(
-    comp.score * 0.20 +
-    cardio.score * 0.20 +
-    sleepScore.score * 0.15 +
-    recovery * 0.15 +
-    activity.score * 0.15 +
-    nutritionScore * 0.08 +
-    consistencyScore * 0.07
-  )
+    comp.score * 1.8 +        // 180 max (composition = 20%)
+    cardio.score * 1.8 +      // 180 max (cardiovascular = 20%)
+    sleepScore.score * 1.35 + // 135 max (sleep = 15%)
+    recovery * 1.35 +         // 135 max (recovery = 15%)
+    activity.score * 1.35 +   // 135 max (activity = 15%)
+    nutritionScore * 0.72 +   // 72 max (nutrition = 8%)
+    consistencyScore * 0.63   // 63 max (consistency = 7%)
+  )                           // Total: 900 max
 
   const allInsights = [
     ...comp.insights,
