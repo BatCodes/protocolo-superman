@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import type { HealthData, MedReport } from '../lib/types'
-import { HEALTH_CATEGORIES, AI_SYSTEM_PROMPT } from '../lib/constants'
+import { HEALTH_CATEGORY_GROUPS, HEALTH_CATEGORIES, AI_SYSTEM_PROMPT } from '../lib/constants'
 import { callClaude, fileToBase64, hasApiKey } from '../lib/api'
 import { save } from '../lib/storage'
 
@@ -90,6 +90,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
   }
 
   const filledCount = Object.keys(hd).filter(k => (hd[k] || []).length > 0).length
+  const totalMetrics = HEALTH_CATEGORIES.length
 
   return (
     <div className="pb-28 space-y-4">
@@ -97,7 +98,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
       <div className="bg-[#1c1c1e] rounded-2xl px-4 py-3 flex justify-between items-center">
         <div>
           <div className="text-[15px] font-semibold text-white">Metricas de Salud</div>
-          <div className="text-[13px] text-zinc-500">Entrada manual · {filledCount}/{HEALTH_CATEGORIES.length} activas</div>
+          <div className="text-[13px] text-zinc-500">Entrada manual · {filledCount}/{totalMetrics} activas</div>
         </div>
         <div
           className="px-3 py-1.5 rounded-xl text-[11px] font-semibold mono"
@@ -107,83 +108,90 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
         </div>
       </div>
 
-      {/* Metrics as iOS grouped list */}
-      <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
-        Metricas — {filledCount}/{HEALTH_CATEGORIES.length}
-      </p>
-      <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
-        {HEALTH_CATEGORIES.map((m, idx) => {
-          const entries = hd[m.id] || []
-          const lastValue = entries.length > 0 ? entries[entries.length - 1].v : null
-          const trend = entries.slice(-14).map(e => e.v)
-          const isEditing = editingId === m.id
-          const isLast = idx === HEALTH_CATEGORIES.length - 1
+      {/* Grouped metrics */}
+      {HEALTH_CATEGORY_GROUPS.map((group) => (
+        <div key={group.group}>
+          {/* Group header */}
+          <p className="text-[20px] font-bold text-white px-4 mb-2 mt-4">
+            {group.group}
+          </p>
 
-          return (
-            <div key={m.id}>
-              <div
-                className="press px-4 py-3 flex items-center justify-between"
-                style={!isLast || isEditing ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
-                onClick={() => {
-                  setEditingId(isEditing ? null : m.id)
-                  setInputValue(lastValue ? String(lastValue) : '')
-                }}
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
+          {/* iOS grouped list card */}
+          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+            {group.categories.map((m, idx) => {
+              const entries = hd[m.id] || []
+              const lastValue = entries.length > 0 ? entries[entries.length - 1].v : null
+              const trend = entries.slice(-14).map(e => e.v)
+              const isEditing = editingId === m.id
+              const isLast = idx === group.categories.length - 1
+
+              return (
+                <div key={m.id}>
                   <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ background: m.c }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[15px] text-white">{m.l}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MiniSparkline data={trend} color={m.c} />
-                  <div className="text-right">
-                    {lastValue !== null ? (
-                      <span className="text-[15px] mono" style={{ color: m.c }}>
-                        {lastValue}<span className="text-[11px] text-zinc-500 ml-0.5">{m.u}</span>
-                      </span>
-                    ) : (
-                      <span className="text-[13px] text-zinc-600">--</span>
-                    )}
-                  </div>
-                  <span className="text-zinc-600 text-[13px]">{isEditing ? '▾' : '›'}</span>
-                </div>
-              </div>
-
-              {isEditing && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="px-4 py-3 flex gap-2"
-                  style={!isLast ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
-                >
-                  <input
-                    type="number"
-                    step="any"
-                    value={inputValue}
-                    onChange={e => setInputValue(e.target.value)}
-                    autoFocus
-                    onKeyDown={e => e.key === 'Enter' && logMetric(m.id)}
-                    placeholder={m.u}
-                    className="flex-1 bg-[#2c2c2e] text-white px-3 py-2.5 text-[15px] mono rounded-xl outline-none"
-                  />
-                  <button
-                    onClick={() => logMetric(m.id)}
-                    className="press px-5 py-2.5 rounded-2xl text-[13px] font-semibold mono"
-                    style={{ background: m.c, color: '#000' }}
+                    className="press px-4 py-3 flex items-center justify-between"
+                    style={!isLast || isEditing ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+                    onClick={() => {
+                      setEditingId(isEditing ? null : m.id)
+                      setInputValue(lastValue ? String(lastValue) : '')
+                    }}
                   >
-                    Log
-                  </button>
-                </motion.div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ background: m.c }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[15px] text-white">{m.l}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <MiniSparkline data={trend} color={m.c} />
+                      <div className="text-right">
+                        {lastValue !== null ? (
+                          <span className="text-[15px] mono" style={{ color: m.c }}>
+                            {lastValue}<span className="text-[11px] text-zinc-500 ml-0.5">{m.u}</span>
+                          </span>
+                        ) : (
+                          <span className="text-[13px] text-zinc-600">--</span>
+                        )}
+                      </div>
+                      <span className="text-zinc-600 text-[13px]">{isEditing ? '▾' : '›'}</span>
+                    </div>
+                  </div>
+
+                  {isEditing && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="px-4 py-3 flex gap-2"
+                      style={!isLast ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+                    >
+                      <input
+                        type="number"
+                        step="any"
+                        value={inputValue}
+                        onChange={e => setInputValue(e.target.value)}
+                        autoFocus
+                        onKeyDown={e => e.key === 'Enter' && logMetric(m.id)}
+                        placeholder={m.u}
+                        className="flex-1 bg-[#2c2c2e] text-white px-3 py-2.5 text-[15px] mono rounded-xl outline-none"
+                      />
+                      <button
+                        onClick={() => logMetric(m.id)}
+                        className="press px-5 py-2.5 rounded-2xl text-[13px] font-semibold mono"
+                        style={{ background: m.c, color: '#000' }}
+                      >
+                        Log
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
 
       {/* Blood work PDF analyzer */}
       <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">

@@ -75,26 +75,76 @@ export const SUPPLEMENTS: Supplement[] = [
 ]
 
 // ═══════════════════════════════════════════════════════════
-// HEALTH CATEGORIES
+// HEALTH CATEGORIES — 30+ body metrics
 // ═══════════════════════════════════════════════════════════
-export const HEALTH_CATEGORIES: HealthCategory[] = [
-  { id: 'weight', l: 'Peso', u: 'kg', c: theme.gold },
-  { id: 'bf', l: 'Grasa', u: '%', c: theme.orange },
-  { id: 'muscle', l: 'Músculo', u: '%', c: theme.green },
-  { id: 'rhr', l: 'FC Reposo', u: 'bpm', c: theme.red },
-  { id: 'hrv', l: 'HRV', u: 'ms', c: theme.cyan },
-  { id: 'sleep', l: 'Sueño', u: 'h', c: theme.purple },
-  { id: 'bed_time', l: 'H.Dormir', u: 'h', c: theme.purple },
-  { id: 'wake_time', l: 'H.Despertar', u: 'h', c: theme.gold },
-  { id: 'steps', l: 'Pasos', u: '', c: theme.green },
-  { id: 'spo2', l: 'SpO2', u: '%', c: theme.cyan },
-  { id: 'temp', l: 'Temp', u: '°C', c: theme.orange },
-  { id: 'water', l: 'Agua', u: 'L', c: theme.blue },
-  { id: 'bp_sys', l: 'PA Sis', u: 'mmHg', c: theme.red },
-  { id: 'resp', l: 'F.Resp', u: '/min', c: theme.cyan },
-  { id: 'vo2', l: 'VO2', u: 'ml/kg', c: theme.green },
-  { id: 'energy', l: 'E.Activa', u: 'kcal', c: theme.orange },
-]
+export const HEALTH_CATEGORY_GROUPS = [
+  {
+    group: 'Composici\u00f3n Corporal',
+    categories: [
+      { id: 'weight', l: 'Peso', u: 'kg', c: '#ffd60a' },
+      { id: 'bf', l: 'Grasa Corporal', u: '%', c: '#ff9f0a' },
+      { id: 'muscle', l: 'Masa Muscular', u: '%', c: '#30d158' },
+      { id: 'bone_mass', l: 'Masa \u00d3sea', u: 'kg', c: '#8e8e93' },
+      { id: 'water_body', l: 'Agua Corporal', u: '%', c: '#64d2ff' },
+      { id: 'visceral_fat', l: 'Grasa Visceral', u: 'nivel', c: '#ff453a' },
+      { id: 'bmr', l: 'Metabolismo Basal', u: 'kcal', c: '#ff9f0a' },
+      { id: 'bmi', l: 'IMC', u: '', c: '#8e8e93' },
+    ],
+  },
+  {
+    group: 'An\u00e1lisis Segmental',
+    categories: [
+      { id: 'muscle_arm_r', l: 'M\u00fasculo Brazo D', u: 'kg', c: '#30d158' },
+      { id: 'muscle_arm_l', l: 'M\u00fasculo Brazo I', u: 'kg', c: '#30d158' },
+      { id: 'muscle_trunk', l: 'M\u00fasculo Tronco', u: 'kg', c: '#30d158' },
+      { id: 'muscle_leg_r', l: 'M\u00fasculo Pierna D', u: 'kg', c: '#30d158' },
+      { id: 'muscle_leg_l', l: 'M\u00fasculo Pierna I', u: 'kg', c: '#30d158' },
+      { id: 'fat_arm_r', l: 'Grasa Brazo D', u: '%', c: '#ff9f0a' },
+      { id: 'fat_arm_l', l: 'Grasa Brazo I', u: '%', c: '#ff9f0a' },
+      { id: 'fat_trunk', l: 'Grasa Tronco', u: '%', c: '#ff9f0a' },
+      { id: 'fat_leg_r', l: 'Grasa Pierna D', u: '%', c: '#ff9f0a' },
+      { id: 'fat_leg_l', l: 'Grasa Pierna I', u: '%', c: '#ff9f0a' },
+    ],
+  },
+  {
+    group: 'Cardiovascular',
+    categories: [
+      { id: 'rhr', l: 'FC Reposo', u: 'bpm', c: '#ff453a' },
+      { id: 'hrv', l: 'HRV', u: 'ms', c: '#64d2ff' },
+      { id: 'spo2', l: 'SpO2', u: '%', c: '#64d2ff' },
+      { id: 'bp_sys', l: 'PA Sist\u00f3lica', u: 'mmHg', c: '#ff453a' },
+      { id: 'bp_dia', l: 'PA Diast\u00f3lica', u: 'mmHg', c: '#ff453a' },
+      { id: 'vo2', l: 'VO2 max', u: 'ml/kg', c: '#30d158' },
+      { id: 'resp', l: 'Freq. Respiratoria', u: '/min', c: '#64d2ff' },
+    ],
+  },
+  {
+    group: 'Sue\u00f1o y Recuperaci\u00f3n',
+    categories: [
+      { id: 'sleep', l: 'Horas de Sue\u00f1o', u: 'h', c: '#bf5af2' },
+      { id: 'bed_time', l: 'Hora Dormir', u: 'h', c: '#bf5af2' },
+      { id: 'wake_time', l: 'Hora Despertar', u: 'h', c: '#ffd60a' },
+      { id: 'temp', l: 'Temperatura', u: '\u00b0C', c: '#ff9f0a' },
+    ],
+  },
+  {
+    group: 'Actividad y Nutrici\u00f3n',
+    categories: [
+      { id: 'steps', l: 'Pasos', u: '', c: '#30d158' },
+      { id: 'energy', l: 'Energ\u00eda Activa', u: 'kcal', c: '#ff9f0a' },
+      { id: 'water', l: 'Agua', u: 'L', c: '#64d2ff' },
+      { id: 'waist', l: 'Cintura', u: 'cm', c: '#8e8e93' },
+      { id: 'hip', l: 'Cadera', u: 'cm', c: '#8e8e93' },
+      { id: 'body_protein', l: 'Prote\u00edna Corporal', u: 'kg', c: '#bf5af2' },
+      { id: 'mineral_mass', l: 'Masa Mineral', u: 'kg', c: '#8e8e93' },
+    ],
+  },
+] as const
+
+// Flat list for backward compatibility
+export const HEALTH_CATEGORIES: HealthCategory[] = HEALTH_CATEGORY_GROUPS.flatMap(g =>
+  g.categories.map(c => ({ ...c }))
+)
 
 // ═══════════════════════════════════════════════════════════
 // BLOOD WORK SCHEDULE
