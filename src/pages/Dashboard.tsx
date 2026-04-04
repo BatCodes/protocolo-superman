@@ -3,6 +3,7 @@ import type { Plan, ReadinessResult, DecisionResult, InjuryResult, BloodResult, 
 import type { MealPlan } from '../lib/profile'
 import { SUPPLEMENTS } from '../lib/constants'
 import { Ring } from '../components/ui/Ring'
+import { Chart } from '../components/ui/Chart'
 
 interface DashboardProps {
   plan: Plan
@@ -22,20 +23,14 @@ interface DashboardProps {
   macros: { kcal: number; protein: number; carbs: number; fat: number; water: number }
 }
 
-const modeColors: Record<string, string> = {
-  PUSH: '#30d158', NORMAL: '#ffd60a', REDUCE: '#ff9f0a',
-  RECOVER: '#bf5af2', DELOAD: '#64d2ff', PROTECT: '#ff453a',
-}
-
 const fadeIn = {
-  hidden: { opacity: 0, y: 10 },
+  hidden: { opacity: 0, y: 12 },
   show: (i: number) => ({
     opacity: 1, y: 0,
-    transition: { delay: i * 0.05, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    transition: { delay: i * 0.06, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const },
   }),
 }
 
-// Determine which meals should be "current" based on time
 function getCurrentMealIndex(mealPlan: MealPlan[]): number {
   const now = new Date()
   const currentMinutes = now.getHours() * 60 + now.getMinutes()
@@ -46,151 +41,207 @@ function getCurrentMealIndex(mealPlan: MealPlan[]): number {
   return 0
 }
 
-export function Dashboard({
-  plan, readiness, decision, injury, blood, predictions,
-  briefing, briefingLoading, checks, toggle, mealPlan, macros,
-}: DashboardProps) {
-  const mc = modeColors[decision.mode] || '#ffd60a'
-  const readyColor = readiness.score >= 70 ? '#30d158' : readiness.score >= 50 ? '#ff9f0a' : '#ff453a'
-  const currentMeal = getCurrentMealIndex(mealPlan)
+/* ─── Concentric Activity Rings (Apple Fitness style) ─── */
+function ActivityRings({
+  workoutPct,
+  nutritionPct,
+  readinessPct,
+}: {
+  workoutPct: number
+  nutritionPct: number
+  readinessPct: number
+}) {
+  const outerSize = 160
+  const middleSize = 124
+  const innerSize = 88
+  const sw = 14
 
-  // Count checked meals today
-  const mealsChecked = mealPlan.filter((_, i) => checks[`meal-${i}`]).length
+  const ENTRENO = '#ff9f0a'
+  const NUTRICION = '#30d158'
+  const READINESS = '#64d2ff'
 
   return (
-    <div className="pb-28">
-      {/* ── Hero: Readiness Ring ── */}
+    <div className="relative" style={{ width: outerSize, height: outerSize }}>
+      {/* Outer — Entreno */}
+      <div className="absolute inset-0">
+        <Ring pct={workoutPct} size={outerSize} strokeWidth={sw} color={ENTRENO} />
+      </div>
+      {/* Middle — Nutrición */}
+      <div
+        className="absolute"
+        style={{
+          top: (outerSize - middleSize) / 2,
+          left: (outerSize - middleSize) / 2,
+        }}
+      >
+        <Ring pct={nutritionPct} size={middleSize} strokeWidth={sw} color={NUTRICION} />
+      </div>
+      {/* Inner — Readiness */}
+      <div
+        className="absolute"
+        style={{
+          top: (outerSize - innerSize) / 2,
+          left: (outerSize - innerSize) / 2,
+        }}
+      >
+        <Ring pct={readinessPct} size={innerSize} strokeWidth={sw} color={READINESS} />
+      </div>
+      {/* Center label */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-[22px] font-black text-white mono">S</span>
+      </div>
+    </div>
+  )
+}
+
+export function Dashboard({
+  plan, readiness, decision, injury: _injury, blood, predictions: _predictions,
+  hd, briefing, briefingLoading, wkLog, checks, toggle, mealPlan, macros,
+}: DashboardProps) {
+  // ── Workout completion ──
+  const TODAY = new Date().toISOString().slice(0, 10)
+  const todaySets = Object.entries(wkLog)
+    .filter(([key]) => key.startsWith(TODAY))
+    .reduce((sum, [, sets]) => sum + sets.length, 0)
+  const targetSets = plan.split === 'REST' ? 0 : 28
+  const workoutPct = targetSets > 0 ? Math.min(100, Math.round(todaySets / targetSets * 100)) : 100
+
+  // ── Nutrition completion ──
+  const totalMeals = mealPlan.filter(m => m.type === 'meal').length || 1
+  const mealsChecked = mealPlan.filter((_, i) => checks[`meal-${i}`]).length
+  const nutritionPct = Math.min(100, Math.round(mealsChecked / totalMeals * 100))
+
+  // ── Readiness ──
+  const readinessPct = Math.min(100, Math.max(0, readiness.score))
+
+  // ── Chart data ──
+  const readinessData = (hd.hrv || []).slice(-14).map(e => ({ date: e.d, value: e.v }))
+  const weightData = (hd.weight || []).slice(-14).map(e => ({ date: e.d, value: e.v }))
+
+  const currentMeal = getCurrentMealIndex(mealPlan)
+  const mc = ({ PUSH: '#30d158', NORMAL: '#ffd60a', REDUCE: '#ff9f0a', RECOVER: '#bf5af2', DELOAD: '#64d2ff', PROTECT: '#ff453a' } as Record<string, string>)[decision.mode] || '#ffd60a'
+
+  return (
+    <div className="pb-28 bg-black min-h-screen">
+
+      {/* ═══════════════════════════════════════════════
+          1. ACTIVITY RINGS HERO
+          ═══════════════════════════════════════════════ */}
       <motion.div
         custom={0} variants={fadeIn} initial="hidden" animate="show"
-        className="flex flex-col items-center pt-4 pb-6"
+        className="flex flex-col items-center pt-6 pb-2"
       >
-        <Ring pct={readiness.score} size={120} strokeWidth={8} color={readyColor}>
-          <div className="text-center">
-            <div className="text-[36px] font-black text-white mono">{readiness.score}</div>
-            <div className="text-[11px] font-medium text-zinc-500">Readiness</div>
-          </div>
-        </Ring>
+        <ActivityRings
+          workoutPct={workoutPct}
+          nutritionPct={nutritionPct}
+          readinessPct={readinessPct}
+        />
 
-        <div className="mt-4 text-center">
-          <div className="text-[15px] font-semibold" style={{ color: mc }}>
-            {decision.action}
-          </div>
-          <div className="text-[13px] text-zinc-500 mt-1 max-w-[300px] leading-relaxed">
-            {decision.details}
-          </div>
-        </div>
-
-        {/* Modification pills */}
-        <div className="flex gap-2 flex-wrap justify-center mt-3">
-          {decision.mods.map((m, i) => (
-            <span
-              key={i}
-              className="text-[11px] font-medium px-3 py-1 rounded-full"
-              style={{ background: mc + '1a', color: mc }}
-            >
-              {m}
-            </span>
-          ))}
-        </div>
-
-        {/* Macro summary */}
-        <div className="text-[12px] text-zinc-500 mono mt-3">
-          {macros.kcal} kcal · {macros.protein}P · {macros.carbs}C · {macros.fat}G
+        {/* Metrics row */}
+        <div className="mt-5 flex items-center gap-1.5 flex-wrap justify-center px-4">
+          <span className="text-[13px] font-semibold" style={{ color: '#ff9f0a' }}>
+            Entreno
+          </span>
+          <span className="text-[13px] text-zinc-400 mono">
+            {todaySets}/{targetSets} sets
+          </span>
+          <span className="text-[13px] text-zinc-700 mx-1">·</span>
+          <span className="text-[13px] font-semibold" style={{ color: '#30d158' }}>
+            Nutrición
+          </span>
+          <span className="text-[13px] text-zinc-400 mono">
+            {macros.kcal}/3200 kcal
+          </span>
+          <span className="text-[13px] text-zinc-700 mx-1">·</span>
+          <span className="text-[13px] font-semibold" style={{ color: '#64d2ff' }}>
+            Ready
+          </span>
+          <span className="text-[13px] text-zinc-400 mono">
+            {readiness.score}/100
+          </span>
         </div>
       </motion.div>
 
-      {/* ── Readiness Breakdown ── */}
-      <motion.div custom={1} variants={fadeIn} initial="hidden" animate="show">
-        <div className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
-          Componentes
-        </div>
-        <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden mx-1">
-          {[
-            { l: 'HRV', v: readiness.hrvScore, c: '#64d2ff' },
-            { l: 'Sueño', v: readiness.sleepScore, c: '#bf5af2' },
-            { l: 'Consistencia', v: readiness.wakeScore, c: '#ffd60a' },
-            { l: 'FC Reposo', v: readiness.rhrScore, c: '#ff453a' },
-            { l: 'Carga (ACWR)', v: readiness.acwrScore, c: '#ff9f0a' },
-          ].map((m, i, arr) => (
-            <div
-              key={i}
-              className="flex items-center justify-between px-4 py-3"
-              style={{ borderBottom: i < arr.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none' }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full" style={{ background: m.c }} />
-                <span className="text-[15px] text-white">{m.l}</span>
+      {/* ═══════════════════════════════════════════════
+          2. AI INSIGHT CARD
+          ═══════════════════════════════════════════════ */}
+      <motion.div custom={1} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
+        <div className="text-[20px] font-bold text-white mb-3">Briefing IA</div>
+        <div
+          className="bg-[#1c1c1e] rounded-2xl p-4 relative overflow-hidden"
+        >
+          {/* Accent gradient bar */}
+          <div
+            className="absolute top-0 left-0 right-0 h-[3px]"
+            style={{ background: 'linear-gradient(90deg, #ff9f0a, #30d158, #64d2ff)' }}
+          />
+          {briefingLoading ? (
+            <div className="py-6 flex flex-col items-center gap-3">
+              <div className="flex gap-1.5">
+                {[0, 1, 2].map(i => (
+                  <motion.div
+                    key={i}
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: '#ff9f0a' }}
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+                  />
+                ))}
               </div>
-              <span
-                className="text-[15px] font-semibold mono"
-                style={{ color: m.v >= 70 ? '#30d158' : m.v >= 50 ? '#ff9f0a' : '#ff453a' }}
+              <span className="text-[14px] text-zinc-500">Generando briefing...</span>
+            </div>
+          ) : briefing ? (
+            <div className="text-[14px] text-zinc-300 leading-relaxed whitespace-pre-wrap pt-1">
+              {briefing}
+            </div>
+          ) : (
+            <div className="text-[14px] text-zinc-500 text-center py-6">
+              Configura tu API key en ajustes para activar el briefing diario
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* ═══════════════════════════════════════════════
+          3. HOY (TODAY SUMMARY)
+          ═══════════════════════════════════════════════ */}
+      <motion.div custom={2} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
+        <div className="text-[20px] font-bold text-white mb-3">Hoy</div>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: 'Día del protocolo', value: `${plan.day}`, sub: `Semana ${plan.week}` },
+            { label: 'Fase actual', value: plan.phaseName, sub: `Fase ${plan.phase}` },
+            { label: 'Split de hoy', value: plan.split, sub: plan.split === 'REST' ? 'Descanso activo' : 'Entrenamiento' },
+            {
+              label: 'ACWR',
+              value: readiness.acwr.toFixed(2),
+              sub: readiness.acwr >= 0.8 && readiness.acwr <= 1.3 ? 'Zona óptima' : readiness.acwr > 1.5 ? 'Riesgo alto' : 'Fuera de rango',
+              color: readiness.acwr >= 0.8 && readiness.acwr <= 1.3 ? '#30d158' : readiness.acwr > 1.5 ? '#ff453a' : '#ff9f0a',
+            },
+          ].map((item, i) => (
+            <div key={i} className="bg-[#1c1c1e] rounded-2xl p-4">
+              <div className="text-[13px] text-zinc-500 mb-1">{item.label}</div>
+              <div
+                className="text-[22px] font-bold mono"
+                style={{ color: (item as { color?: string }).color || '#ffffff' }}
               >
-                {m.v}
-              </span>
+                {item.value}
+              </div>
+              <div className="text-[12px] text-zinc-600 mt-0.5">{item.sub}</div>
             </div>
           ))}
         </div>
       </motion.div>
 
-      {/* ── ACWR & Injury ── */}
-      <motion.div custom={2} variants={fadeIn} initial="hidden" animate="show" className="mt-4">
-        <div className="grid grid-cols-2 gap-3 mx-1">
-          <div className="bg-[#1c1c1e] rounded-2xl p-4">
-            <div className="text-[13px] text-zinc-500 mb-1">ACWR</div>
-            <div
-              className="text-[28px] font-black mono"
-              style={{
-                color: readiness.acwr >= 0.8 && readiness.acwr <= 1.3 ? '#30d158'
-                  : readiness.acwr > 1.5 ? '#ff453a' : '#ff9f0a',
-              }}
-            >
-              {readiness.acwr.toFixed(2)}
-            </div>
-            <div className="text-[11px] text-zinc-600 mt-1">Óptimo: 0.8 – 1.3</div>
-            {/* Progress bar */}
-            <div className="mt-3 h-1.5 bg-white/5 rounded-full relative overflow-hidden">
-              <div className="absolute left-[40%] w-[25%] h-full rounded-full" style={{ background: '#30d15830' }} />
-              <motion.div
-                className="absolute h-1.5 w-1.5 rounded-full top-0"
-                style={{ background: readiness.acwr >= 0.8 && readiness.acwr <= 1.3 ? '#30d158' : '#ff453a' }}
-                initial={{ left: '0%' }}
-                animate={{ left: `${Math.min(readiness.acwr / 2 * 100, 100)}%` }}
-                transition={{ duration: 1, ease: 'easeOut' }}
-              />
-            </div>
-          </div>
-          <div className="bg-[#1c1c1e] rounded-2xl p-4">
-            <div className="text-[13px] text-zinc-500 mb-1">Riesgo Lesión</div>
-            <div
-              className="text-[28px] font-black mono"
-              style={{ color: injury.level === 'LOW' ? '#30d158' : injury.level === 'MODERATE' ? '#ff9f0a' : '#ff453a' }}
-            >
-              {injury.risk}%
-            </div>
-            <div
-              className="text-[11px] font-semibold mt-1"
-              style={{ color: injury.level === 'LOW' ? '#30d158' : injury.level === 'MODERATE' ? '#ff9f0a' : '#ff453a' }}
-            >
-              {injury.level === 'LOW' ? 'Bajo' : injury.level === 'MODERATE' ? 'Moderado' : 'Alto'}
-            </div>
-            {injury.factors.length > 0 && (
-              <div className="text-[11px] text-zinc-600 mt-2 leading-relaxed">{injury.factors[0]}</div>
-            )}
-          </div>
+      {/* ═══════════════════════════════════════════════
+          4. COMIDAS DE HOY
+          ═══════════════════════════════════════════════ */}
+      <motion.div custom={3} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[20px] font-bold text-white">Comidas de Hoy</div>
+          <div className="text-[13px] text-zinc-500 mono">{mealsChecked}/{mealPlan.length}</div>
         </div>
-      </motion.div>
-
-      {/* ── Comidas de Hoy ── */}
-      <motion.div custom={3} variants={fadeIn} initial="hidden" animate="show" className="mt-6">
-        <div className="flex items-center justify-between px-4 mb-2">
-          <div className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">
-            Comidas de Hoy
-          </div>
-          <div className="text-[13px] text-zinc-600 mono">
-            {mealsChecked}/{mealPlan.length}
-          </div>
-        </div>
-        <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden mx-1">
+        <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
           {mealPlan.map((meal, i) => {
             const checked = checks[`meal-${i}`]
             const isPast = i < currentMeal
@@ -206,7 +257,6 @@ export function Dashboard({
                   background: isCurrent && !checked ? 'rgba(255, 214, 10, 0.04)' : 'transparent',
                 }}
               >
-                {/* Check circle */}
                 <div
                   className="w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 transition-all"
                   style={{
@@ -222,15 +272,11 @@ export function Dashboard({
                     </svg>
                   )}
                 </div>
-
-                {/* Time */}
                 <div className="w-11 flex-shrink-0">
                   <span className={`text-[13px] mono ${checked ? 'text-zinc-700' : isPast ? 'text-zinc-600' : 'text-zinc-400'}`}>
                     {meal.time}
                   </span>
                 </div>
-
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className={`text-[15px] flex items-center gap-1.5 ${checked ? 'text-zinc-600 line-through' : 'text-white'}`}>
                     <span>{meal.icon}</span>
@@ -240,8 +286,6 @@ export function Dashboard({
                     {meal.desc}
                   </div>
                 </div>
-
-                {/* Current indicator */}
                 {isCurrent && !checked && (
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#ffd60a' }} />
                 )}
@@ -249,60 +293,139 @@ export function Dashboard({
             )
           })}
         </div>
+
+        {/* Macro summary below meals */}
+        <div className="mt-3 flex justify-center">
+          <span className="text-[12px] text-zinc-500 mono">
+            {macros.kcal} kcal · {macros.protein}P · {macros.carbs}C · {macros.fat}G · {macros.water}ml
+          </span>
+        </div>
       </motion.div>
 
-      {/* ── Recovery ── */}
-      <motion.div custom={4} variants={fadeIn} initial="hidden" animate="show" className="mt-6">
-        <div className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
-          Recovery
+      {/* ═══════════════════════════════════════════════
+          5. TENDENCIAS (TREND CHARTS)
+          ═══════════════════════════════════════════════ */}
+      <motion.div custom={4} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
+        <div className="text-[20px] font-bold text-white mb-3">Tendencias</div>
+        <div className="grid grid-cols-2 gap-3">
+          {/* HRV / Readiness trend */}
+          <div className="bg-[#1c1c1e] rounded-2xl p-3">
+            <div className="text-[13px] text-zinc-500 mb-2">HRV (14d)</div>
+            <Chart
+              data={readinessData}
+              color="#64d2ff"
+              height={80}
+              showArea
+              showDots={false}
+              showLabels
+              unit=" ms"
+            />
+          </div>
+          {/* Weight trend */}
+          <div className="bg-[#1c1c1e] rounded-2xl p-3">
+            <div className="text-[13px] text-zinc-500 mb-2">Peso (14d)</div>
+            <Chart
+              data={weightData}
+              color="#ff9f0a"
+              height={80}
+              showArea
+              showDots={false}
+              showLabels
+              unit=" kg"
+            />
+          </div>
         </div>
-        <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden mx-1">
-          {decision.recovery.map((r, i, arr) => (
-            <div
-              key={i}
-              className="flex items-center px-4 py-3"
-              style={{ borderBottom: i < arr.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none' }}
+      </motion.div>
+
+      {/* ═══════════════════════════════════════════════
+          6. DECISION DEL MOTOR
+          ═══════════════════════════════════════════════ */}
+      <motion.div custom={5} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
+        <div className="text-[20px] font-bold text-white mb-3">Decisión del Motor</div>
+        <div className="bg-[#1c1c1e] rounded-2xl p-4">
+          {/* Action */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: mc }} />
+            <span className="text-[16px] font-semibold text-white">{decision.action}</span>
+            <span
+              className="text-[12px] font-semibold px-2.5 py-0.5 rounded-full ml-auto"
+              style={{ background: mc + '1a', color: mc }}
             >
-              <span className="text-[15px] text-white">{r}</span>
+              {decision.mode}
+            </span>
+          </div>
+
+          {/* Details */}
+          <div className="text-[14px] text-zinc-400 leading-relaxed mb-3">
+            {decision.details}
+          </div>
+
+          {/* Mods */}
+          {decision.mods.length > 0 && (
+            <div className="flex gap-2 flex-wrap mb-3">
+              {decision.mods.map((m, i) => (
+                <span
+                  key={i}
+                  className="text-[11px] font-medium px-3 py-1 rounded-full"
+                  style={{ background: mc + '1a', color: mc }}
+                >
+                  {m}
+                </span>
+              ))}
             </div>
-          ))}
+          )}
+
+          {/* Recovery */}
+          {decision.recovery.length > 0 && (
+            <>
+              <div
+                className="pt-3 mb-2"
+                style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}
+              >
+                <span className="text-[13px] text-zinc-500">Recuperación</span>
+              </div>
+              {decision.recovery.map((r, i) => (
+                <div key={i} className="flex items-center gap-2.5 py-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#64d2ff' }} />
+                  <span className="text-[14px] text-zinc-300">{r}</span>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Reasons */}
+          {decision.reasons.length > 0 && (
+            <>
+              <div
+                className="pt-3 mt-2 mb-2"
+                style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}
+              >
+                <span className="text-[13px] text-zinc-500">Factores</span>
+              </div>
+              {decision.reasons.map((r, i) => (
+                <div key={i} className="flex items-center gap-2.5 py-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-zinc-500" />
+                  <span className="text-[14px] text-zinc-400">{r}</span>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </motion.div>
 
-      {/* ── Why (Reasons) ── */}
-      {decision.reasons.length > 0 && (
-        <motion.div custom={5} variants={fadeIn} initial="hidden" animate="show" className="mt-6">
-          <div className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
-            Factores
-          </div>
-          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden mx-1">
-            {decision.reasons.map((r, i, arr) => (
-              <div
-                key={i}
-                className="flex items-center gap-2.5 px-4 py-3"
-                style={{ borderBottom: i < arr.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none' }}
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-zinc-500 flex-shrink-0" />
-                <span className="text-[14px] text-zinc-300">{r}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
-      {/* ── Blood Work ── */}
-      <motion.div custom={6} variants={fadeIn} initial="hidden" animate="show" className="mt-6">
-        <div className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
-          Analítica
-        </div>
-        <div className="bg-[#1c1c1e] rounded-2xl p-4 mx-1">
+      {/* ═══════════════════════════════════════════════
+          7. ANALITICA (BLOOD WORK)
+          ═══════════════════════════════════════════════ */}
+      <motion.div custom={6} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
+        <div className="text-[20px] font-bold text-white mb-3">Analítica</div>
+        <div className="bg-[#1c1c1e] rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <span className="text-[15px] font-semibold text-white">{blood.next.label}</span>
             <span
-              className="text-[13px] font-semibold mono px-2.5 py-0.5 rounded-full"
+              className="text-[12px] font-semibold mono px-2.5 py-0.5 rounded-full"
               style={{
-                background: blood.overdue ? '#ff453a1a' : '#ffd60a1a',
-                color: blood.overdue ? '#ff453a' : '#ffd60a',
+                background: blood.overdue ? '#ff453a1a' : '#30d1581a',
+                color: blood.overdue ? '#ff453a' : '#30d158',
               }}
             >
               {blood.overdue ? 'Pendiente' : `${blood.weeksUntil} sem`}
@@ -312,68 +435,15 @@ export function Dashboard({
         </div>
       </motion.div>
 
-      {/* ── Prediction ── */}
-      {predictions.weightTrend && (
-        <motion.div custom={7} variants={fadeIn} initial="hidden" animate="show" className="mt-6">
-          <div className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
-            Predicción
-          </div>
-          <div className="bg-[#1c1c1e] rounded-2xl p-4 mx-1">
-            <div className="flex items-baseline justify-between">
-              <span className="text-[13px] text-zinc-500">Peso actual</span>
-              <span className="text-[17px] font-bold text-white mono">{predictions.weightTrend.current.toFixed(1)} kg</span>
-            </div>
-            <div className="flex items-baseline justify-between mt-2">
-              <span className="text-[13px] text-zinc-500">Cambio semanal</span>
-              <span
-                className="text-[17px] font-bold mono"
-                style={{ color: predictions.weightTrend.weeklyChange > 0 ? '#30d158' : '#ff453a' }}
-              >
-                {predictions.weightTrend.weeklyChange > 0 ? '+' : ''}{predictions.weightTrend.weeklyChange.toFixed(2)} kg
-              </span>
-            </div>
-            <div
-              className="mt-3 pt-3 flex items-baseline justify-between"
-              style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}
-            >
-              <span className="text-[13px] text-zinc-500">Proyección 4 sem</span>
-              <span className="text-[17px] font-bold mono" style={{ color: '#ffd60a' }}>
-                {predictions.weightTrend.projected4w} kg
-              </span>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* ── Briefing IA ── */}
-      <motion.div custom={8} variants={fadeIn} initial="hidden" animate="show" className="mt-6">
-        <div className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
-          Briefing IA
+      {/* ═══════════════════════════════════════════════
+          8. SUPLEMENTOS
+          ═══════════════════════════════════════════════ */}
+      <motion.div custom={7} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[20px] font-bold text-white">Suplementos</div>
+          <div className="text-[13px] text-zinc-500">Fase {plan.phase}</div>
         </div>
-        <div className="bg-[#1c1c1e] rounded-2xl p-4 mx-1">
-          {briefingLoading ? (
-            <div className="text-[14px] text-center py-6 animate-pulse" style={{ color: '#ffd60a' }}>
-              Generando briefing...
-            </div>
-          ) : briefing ? (
-            <div className="text-[14px] text-zinc-300 leading-relaxed whitespace-pre-wrap">{briefing}</div>
-          ) : (
-            <div className="text-[14px] text-zinc-600 text-center py-6">
-              Configura tu API key en ajustes para activar el briefing automático
-            </div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* ── Suplementos ── */}
-      <motion.div custom={9} variants={fadeIn} initial="hidden" animate="show" className="mt-6">
-        <div className="flex items-center justify-between px-4 mb-2">
-          <div className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider">
-            Suplementos
-          </div>
-          <div className="text-[13px] text-zinc-600">Fase {plan.phase}</div>
-        </div>
-        <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden mx-1">
+        <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
           {SUPPLEMENTS.filter(s => s.ph <= plan.phase).map((s, i, arr) => {
             const checked = checks[`s-${i}`]
             return (
@@ -428,19 +498,21 @@ export function Dashboard({
         </div>
       </motion.div>
 
-      {/* ── Progress Bar ── */}
-      <motion.div custom={10} variants={fadeIn} initial="hidden" animate="show" className="mt-6 mx-1">
+      {/* ═══════════════════════════════════════════════
+          PROTOCOL PROGRESS (compact footer)
+          ═══════════════════════════════════════════════ */}
+      <motion.div custom={8} variants={fadeIn} initial="hidden" animate="show" className="mt-8 px-4">
         <div className="bg-[#1c1c1e] rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[13px] text-zinc-500">Progreso total</span>
+            <span className="text-[13px] text-zinc-500">Progreso del protocolo</span>
             <span className="text-[13px] mono text-zinc-400">
-              Día {plan.day} de {plan.totalDays}
+              Día {plan.day} / {plan.totalDays}
             </span>
           </div>
           <div className="h-2 bg-white/5 rounded-full overflow-hidden">
             <motion.div
               className="h-full rounded-full"
-              style={{ background: 'linear-gradient(90deg, #ffd60a, #ff9f0a)' }}
+              style={{ background: 'linear-gradient(90deg, #ff9f0a, #30d158)' }}
               initial={{ width: 0 }}
               animate={{ width: `${plan.pct}%` }}
               transition={{ duration: 1.2, ease: 'easeOut' }}
@@ -448,7 +520,7 @@ export function Dashboard({
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-[13px] text-zinc-500">{plan.phaseName}</span>
-            <span className="text-[13px] mono font-semibold" style={{ color: '#ffd60a' }}>
+            <span className="text-[13px] mono font-semibold" style={{ color: '#30d158' }}>
               {plan.pct}%
             </span>
           </div>

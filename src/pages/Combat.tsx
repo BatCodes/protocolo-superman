@@ -4,6 +4,9 @@ import type { Plan, WorkoutLog, DecisionResult } from '../lib/types'
 import { WORKOUTS, SPLITS, DAY_LABELS } from '../lib/constants'
 import { save } from '../lib/storage'
 import { getExerciseHistory, getProgressionSuggestion, getWarmupSets } from '../lib/exercises'
+import { getGuide } from '../lib/exerciseGuide'
+import { MuscleMap } from '../components/ui/MuscleMap'
+import { Info } from 'lucide-react'
 
 interface CombatProps {
   plan: Plan
@@ -36,6 +39,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
   const [restTotal, setRestTotal] = useState(0)
   const [sessionElapsed, setSessionElapsed] = useState(0)
   const [expandedWarmups, setExpandedWarmups] = useState<Record<number, boolean>>({})
+  const [openGuide, setOpenGuide] = useState<number | null>(null)
 
   const sessionStartRef = useRef<number | null>(null)
   const sessionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -218,6 +222,8 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                 ? getWarmupSets(lastWeight, [40, 60, 80])
                 : []
 
+              const guide = getGuide(ex.n)
+
               return (
                 <motion.div
                   key={`${split}-${i}`}
@@ -226,9 +232,9 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                   style={!isLast ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
                 >
                   {/* Exercise header */}
-                  <div className="flex justify-between items-center mb-1">
+                  <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-[14px] font-semibold text-white">{ex.n}</span>
+                      <span className="text-[15px] font-semibold text-white">{ex.n}</span>
                       {ex.t && (
                         <span
                           className="text-[10px] mono px-2 py-0.5 rounded-md"
@@ -242,6 +248,13 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setOpenGuide(openGuide === i ? null : i) }}
+                        className="press w-7 h-7 rounded-full flex items-center justify-center"
+                        style={{ background: openGuide === i ? '#0a84ff20' : 'rgba(255,255,255,0.06)' }}
+                      >
+                        <Info size={14} color={openGuide === i ? '#0a84ff' : '#636366'} />
+                      </button>
                       {/* Set counter */}
                       <span className="text-[12px] mono font-medium" style={{ color: sets.length >= ex.s ? '#30d158' : '#8e8e93' }}>
                         {sets.length}/{ex.s} series
@@ -251,6 +264,67 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                       </span>
                     </div>
                   </div>
+
+                  {/* Exercise Guide (expandable) */}
+                  <AnimatePresence>
+                    {openGuide === i && guide && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-3 pb-1" style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}>
+                          {/* Muscle Map */}
+                          <div className="flex justify-center mb-3">
+                            <MuscleMap muscleIds={guide.muscleIds} color="#30d158" size={100} />
+                          </div>
+
+                          {/* Muscles */}
+                          <div className="mb-3">
+                            <div className="text-[11px] text-zinc-500 mb-1">Músculos principales</div>
+                            <div className="flex gap-1.5 flex-wrap">
+                              {guide.muscles.map((m, mi) => (
+                                <span key={mi} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#30d15820', color: '#30d158' }}>{m}</span>
+                              ))}
+                              {guide.secondary.map((m, mi) => (
+                                <span key={mi} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: '#8e8e93' }}>{m}</span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Steps */}
+                          <div className="mb-3">
+                            <div className="text-[11px] text-zinc-500 mb-1.5">Ejecución</div>
+                            {guide.steps.map((step, si) => (
+                              <div key={si} className="flex gap-2 mb-1.5">
+                                <span className="text-[11px] mono w-4 flex-shrink-0" style={{ color: '#0a84ff' }}>{si + 1}</span>
+                                <span className="text-[13px] text-zinc-300 leading-snug">{step}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Tips */}
+                          {guide.tips.length > 0 && (
+                            <div className="mb-3">
+                              <div className="text-[11px] text-zinc-500 mb-1">Consejos</div>
+                              {guide.tips.map((tip, ti) => (
+                                <div key={ti} className="flex gap-2 mb-1">
+                                  <span className="text-[11px]" style={{ color: '#ff9f0a' }}>•</span>
+                                  <span className="text-[13px] text-zinc-400 leading-snug">{tip}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Breathing */}
+                          <div className="text-[13px] text-zinc-500">
+                            <span style={{ color: '#64d2ff' }}>Respiración:</span> {guide.breathe}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* Last session history */}
                   {lastSessionText && (
