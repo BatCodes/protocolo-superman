@@ -169,7 +169,7 @@ export default function App() {
               <Fuel
                 scannedMeals={app.scannedMeals} setScannedMeals={app.setScannedMeals}
                 macroTargets={app.macros} checks={app.checks} toggle={app.toggle}
-                mealPlan={app.mealPlan}
+                mealPlan={app.mealPlan} profile={app.profile}
               />
             )}
             {app.tab === 'recon' && (

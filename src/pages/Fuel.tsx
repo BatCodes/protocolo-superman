@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { ScannedMeal } from '../lib/types'
 import type { MealPlan } from '../lib/profile'
+import { generateMealPlan, computeMacros } from '../lib/profile'
 import type { FoodItem, DiaryEntry } from '../lib/fooddb'
 import { searchFoods, lookupBarcode, getRecentFoods, getDiaryTotals, quickAddFood } from '../lib/fooddb'
 import { callClaude, fileToBase64, hasApiKey } from '../lib/api'
@@ -15,6 +16,7 @@ interface FuelProps {
   checks: Record<string, boolean>
   toggle: (id: string) => void
   mealPlan: MealPlan[]
+  profile: import('../lib/profile').UserProfile | null
 }
 
 type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snacks'
@@ -39,7 +41,7 @@ const SEPARATOR = { borderBottom: '0.33px solid rgba(255,255,255,0.08)' }
 
 type ModalView = 'search' | 'barcode' | 'quickadd' | 'ai-scan' | 'food-detail'
 
-export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, toggle: _toggle, mealPlan }: FuelProps) {
+export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, toggle: _toggle, mealPlan, profile }: FuelProps) {
   const [nutritionBriefing, setNutritionBriefing] = useState<string | null>(null)
   const [nbLoading, setNbLoading] = useState(false)
 
@@ -126,6 +128,13 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
     fat: Math.round(macroTargets.fat * 1.1),
     water: macroTargets.water,
   }
+
+  // Dynamic meal plan for the selected day
+  const dayMealPlan = useMemo(() => {
+    if (!profile) return mealPlan // fallback to today's plan
+    const dayMacros = computeMacros(profile, 1, selectedDay.isTraining) // phase from profile context
+    return generateMealPlan(profile, dayMacros, selectedDay.isTraining)
+  }, [profile, mealPlan, selectedDay.isTraining])
 
   useEffect(() => {
     if (!hasApiKey() || nutritionBriefing) return
@@ -512,7 +521,40 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
         </div>
       )}
 
-      {/* ═══════════════════ MEAL SECTIONS ═══════════════════ */}
+      {/* ═══════════════════ PLANNED MEALS FOR SELECTED DAY ═══════════════════ */}
+      <div className="mb-4">
+        <div className="text-[20px] font-bold text-white mb-3">
+          Plan {isViewingToday ? 'de Hoy' : `${selectedDay.dayLabel} ${selectedDay.dayNum}`}
+        </div>
+        <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+          {dayMealPlan.map((meal, i, arr) => (
+            <div
+              key={i}
+              className="px-4 py-3 flex items-center gap-3"
+              style={{ borderBottom: i < arr.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none' }}
+            >
+              <span className="text-xl flex-shrink-0">{meal.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-[15px] text-white font-medium">{meal.title}</span>
+                  <span className="text-[12px] mono text-zinc-500">{meal.time}</span>
+                </div>
+                <div className="text-[13px] text-zinc-500 mt-0.5 leading-snug">{meal.desc}</div>
+              </div>
+              {meal.type === 'meal' && meal.kcalPct && (
+                <span className="text-[11px] mono px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: '#30d15815', color: '#30d158' }}>
+                  ~{Math.round((meal.kcalPct / 100) * activeDayMacros.kcal)}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="text-[12px] text-zinc-600 mt-2 px-1">
+          {selectedDay.isTraining ? '🏋️ Día de entrenamiento — surplus calórico activo' : '🔄 Día de descanso — macros ajustados'}
+        </div>
+      </div>
+
+      {/* ═══════════════════ MEAL SECTIONS (food diary) ═══════════════════ */}
       {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealSlot[]).map(slot => {
         const entries = mealEntries(slot)
         const kcal = mealKcal(slot)
