@@ -135,10 +135,10 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
 
   // Dynamic meal plan for the selected day
   const dayMealPlan = useMemo(() => {
-    if (!profile) return mealPlan // fallback to today's plan
-    const dayMacros = computeMacros(profile, 1, selectedDay.isTraining) // phase from profile context
+    if (!profile) return mealPlan
+    const dayMacros = computeMacros(profile, plan.phase, selectedDay.isTraining)
     return generateMealPlan(profile, dayMacros, selectedDay.isTraining)
-  }, [profile, mealPlan, selectedDay.isTraining])
+  }, [profile, mealPlan, selectedDay.isTraining, plan.phase])
 
   useEffect(() => {
     if (!hasApiKey() || nutritionBriefing) return
@@ -622,8 +622,83 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
         </div>
       </div>
 
-      {/* ═══════════════════ MEAL SECTIONS (food diary) ═══════════════════ */}
-      {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealSlot[]).map(slot => {
+      {/* ═══════════════════ FOOD DIARY (unified) ═══════════════════ */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[20px] font-bold text-white">Registro</div>
+          <button
+            onClick={() => { setModalMeal('breakfast'); setModalOpen(true); setModalView('search') }}
+            className="press px-3 py-1.5 rounded-full text-[13px] font-semibold flex items-center gap-1.5"
+            style={{ background: '#30d15820', color: '#30d158' }}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Añadir
+          </button>
+        </div>
+
+        {/* Meal type selector in add modal will let user pick Desayuno/Almuerzo/Cena/Snack */}
+
+        {todayEntries.length > 0 ? (
+          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+            {todayEntries.map((entry, idx, arr) => {
+              const prevMeal = idx > 0 ? arr[idx - 1].meal : null
+              const showHeader = entry.meal !== prevMeal
+              return (
+                <div key={idx}>
+                  {showHeader && (
+                    <div className="px-4 pt-3 pb-1 flex items-center gap-2" style={idx > 0 ? { borderTop: '0.33px solid rgba(255,255,255,0.12)' } : undefined}>
+                      <span className="text-[14px]">{MEAL_ICONS[entry.meal as MealSlot]}</span>
+                      <span className="text-[13px] font-semibold text-zinc-400">{MEAL_LABELS[entry.meal as MealSlot]}</span>
+                      <span className="text-[12px] mono text-zinc-600 ml-auto">
+                        {arr.filter(e => e.meal === entry.meal).reduce((a, e) => a + Math.round(e.food.kcal * e.servings), 0)} kcal
+                      </span>
+                    </div>
+                  )}
+                  <div
+                    style={{ borderBottom: idx < arr.length - 1 && arr[idx + 1]?.meal === entry.meal ? '0.33px solid rgba(255,255,255,0.06)' : 'none' }}
+                  >
+                    <div
+                      className="flex items-center px-4 py-2.5 active:bg-white/5 transition-colors"
+                      onClick={() => setSwipingIdx(swipingIdx === idx ? null : idx)}
+                    >
+                      {entry.food.image && (
+                        <img src={entry.food.image} alt="" className="w-9 h-9 rounded-lg object-cover mr-3 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[14px] text-white truncate">{entry.food.name}</div>
+                        <div className="text-[12px] text-zinc-500 truncate">
+                          {entry.food.brand ? `${entry.food.brand} · ` : ''}{entry.food.serving}{entry.servings > 1 ? ` x${entry.servings}` : ''}
+                        </div>
+                      </div>
+                      <div className="text-[14px] mono text-zinc-300 ml-2 flex-shrink-0">{Math.round(entry.food.kcal * entry.servings)}</div>
+                    </div>
+                    <AnimatePresence>
+                      {swipingIdx === idx && (
+                        <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden">
+                          <button onClick={() => deleteEntry(idx)} className="w-full py-2 text-center text-[13px] font-semibold press" style={{ background: '#ff453a20', color: '#ff453a' }}>
+                            Eliminar
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="bg-[#1c1c1e] rounded-2xl p-6 text-center">
+            <div className="text-[28px] mb-2">🍽</div>
+            <div className="text-[14px] text-zinc-500">Sin registros hoy</div>
+            <div className="text-[12px] text-zinc-600 mt-1">Pulsa "Añadir" para registrar comida</div>
+          </div>
+        )}
+      </div>
+
+      {/* LEGACY: hidden meal slot iteration for backward compat */}
+      {false && (['breakfast', 'lunch', 'dinner', 'snacks'] as MealSlot[]).map(slot => {
         const entries = mealEntries(slot)
         const kcal = mealKcal(slot)
         const collapsed = collapsedMeals[slot]
@@ -887,6 +962,24 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                   {MEAL_LABELS[modalMeal]}
                 </span>
                 <div className="w-16" />
+              </div>
+
+              {/* Meal type selector */}
+              <div className="flex gap-1.5 px-4 pb-3">
+                {(['breakfast', 'lunch', 'dinner', 'snacks'] as MealSlot[]).map(slot => (
+                  <button
+                    key={slot}
+                    onClick={() => setModalMeal(slot)}
+                    className="press flex-1 py-2 rounded-xl text-center transition-all"
+                    style={{
+                      background: modalMeal === slot ? '#0a84ff' : '#2c2c2e',
+                      color: modalMeal === slot ? '#fff' : '#8e8e93',
+                    }}
+                  >
+                    <div className="text-[14px]">{MEAL_ICONS[slot]}</div>
+                    <div className="text-[10px] font-medium mt-0.5">{MEAL_LABELS[slot]}</div>
+                  </button>
+                ))}
               </div>
 
               {/* Modal content */}
