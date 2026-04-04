@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
+import { Chart } from '../components/ui/Chart'
 import type { HealthData, MedReport } from '../lib/types'
 import { HEALTH_CATEGORY_GROUPS, HEALTH_CATEGORIES, AI_SYSTEM_PROMPT } from '../lib/constants'
 import { callClaude, fileToBase64, hasApiKey } from '../lib/api'
@@ -161,29 +162,70 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
 
                   {isEditing && (
                     <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="px-4 py-3 flex gap-2"
-                      style={!isLast ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
                     >
-                      <input
-                        type="number"
-                        step="any"
-                        value={inputValue}
-                        onChange={e => setInputValue(e.target.value)}
-                        autoFocus
-                        onKeyDown={e => e.key === 'Enter' && logMetric(m.id)}
-                        placeholder={m.u}
-                        className="flex-1 bg-[#2c2c2e] text-white px-3 py-2.5 text-[15px] mono rounded-xl outline-none"
-                      />
-                      <button
-                        onClick={() => logMetric(m.id)}
-                        className="press px-5 py-2.5 rounded-2xl text-[13px] font-semibold mono"
-                        style={{ background: m.c, color: '#000' }}
-                      >
-                        Log
-                      </button>
+                      <div className="px-4 py-3" style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}>
+                        {/* Historical chart */}
+                        {entries.length >= 2 && (
+                          <div className="mb-3">
+                            <Chart
+                              data={entries.slice(-30).map(e => ({ date: e.d, value: e.v }))}
+                              color={m.c}
+                              height={100}
+                              unit={m.u}
+                            />
+                            {/* Stats row */}
+                            <div className="flex justify-between mt-2">
+                              <div className="text-center">
+                                <div className="text-[11px] text-zinc-600">Min</div>
+                                <div className="text-[13px] mono text-zinc-400">
+                                  {Math.min(...entries.slice(-30).map(e => e.v)).toFixed(1)}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-[11px] text-zinc-600">Media</div>
+                                <div className="text-[13px] mono text-zinc-400">
+                                  {(entries.slice(-30).reduce((a, e) => a + e.v, 0) / entries.slice(-30).length).toFixed(1)}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-[11px] text-zinc-600">Max</div>
+                                <div className="text-[13px] mono text-zinc-400">
+                                  {Math.max(...entries.slice(-30).map(e => e.v)).toFixed(1)}
+                                </div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-[11px] text-zinc-600">Entradas</div>
+                                <div className="text-[13px] mono text-zinc-400">{entries.length}</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Input field */}
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            step="any"
+                            value={inputValue}
+                            onChange={e => setInputValue(e.target.value)}
+                            autoFocus
+                            onKeyDown={e => e.key === 'Enter' && logMetric(m.id)}
+                            placeholder={m.u}
+                            className="flex-1 bg-[#2c2c2e] text-white px-3 py-2.5 text-[15px] mono rounded-xl outline-none"
+                          />
+                          <button
+                            onClick={() => logMetric(m.id)}
+                            className="press px-5 py-2.5 rounded-2xl text-[13px] font-semibold mono"
+                            style={{ background: m.c, color: '#000' }}
+                          >
+                            Log
+                          </button>
+                        </div>
+                      </div>
                     </motion.div>
                   )}
                 </div>

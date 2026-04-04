@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Plan, ReadinessResult, DecisionResult, InjuryResult, BloodResult, PredictionResult, HealthData, WorkoutLog, ScannedMeal } from '../lib/types'
 import type { MealPlan } from '../lib/profile'
 import { SUPPLEMENTS } from '../lib/constants'
 import { Ring } from '../components/ui/Ring'
 import { Chart } from '../components/ui/Chart'
+import { callClaude, hasApiKey } from '../lib/api'
 
 interface DashboardProps {
   plan: Plan
@@ -120,6 +122,44 @@ export function Dashboard({
 
   const currentMeal = getCurrentMealIndex(mealPlan)
   const mc = ({ PUSH: '#30d158', NORMAL: '#ffd60a', REDUCE: '#ff9f0a', RECOVER: '#bf5af2', DELOAD: '#64d2ff', PROTECT: '#ff453a' } as Record<string, string>)[decision.mode] || '#ffd60a'
+
+  const [supplementAnalysis, setSupplementAnalysis] = useState<string | null>(null)
+  const [suppAnalysisLoading, setSuppAnalysisLoading] = useState(false)
+
+  const generateSupplementAnalysis = async () => {
+    if (!hasApiKey()) return
+    setSuppAnalysisLoading(true)
+    try {
+      const activeSupps = SUPPLEMENTS
+        .filter(s => s.ph <= plan.phase)
+        .map(s => `${s.n} ${s.d} (evidencia: ${s.ev}, ${s.tb ? 'T-booster' : 'general'})`)
+        .join(', ')
+
+      const prompt = `ANÁLISIS DE STACK DE SUPLEMENTOS.
+Semana ${plan.week} del protocolo. Fase ${plan.phase} (${plan.phaseName}).
+Stack activo: ${activeSupps}
+
+Analiza:
+1) EFECTOS ACUMULADOS: Qué efectos se esperan después de ${plan.week} semanas con este stack
+2) INTERACCIONES: Sinergias y posibles conflictos entre suplementos
+3) TIMING ÓPTIMO: Cuándo tomar cada uno para máxima absorción
+4) CICLADO: Cuáles necesitan ciclarse y cuándo (ashwagandha, tongkat ali, etc.)
+5) MARCADORES: Qué valores vigilar en la próxima analítica por este stack
+6) OPTIMIZACIÓN: Sugerencias para mejorar el stack en esta fase
+
+Máximo 250 palabras. Español. Directo. Basado en evidencia.`
+
+      const result = await callClaude(
+        [{ role: 'user', content: prompt }],
+        'Eres un farmacólogo deportivo y nutricionista experto en suplementación basada en evidencia. Solo recomiendas suplementos legales y seguros.',
+        1000
+      )
+      setSupplementAnalysis(result)
+    } catch {
+      setSupplementAnalysis('Error generando análisis. Verifica tu API key.')
+    }
+    setSuppAnalysisLoading(false)
+  }
 
   return (
     <div className="pb-28 bg-black min-h-screen">
@@ -495,6 +535,47 @@ export function Dashboard({
               </button>
             )
           })}
+        </div>
+      </motion.div>
+
+      {/* ── AI Supplement Intelligence ── */}
+      <motion.div custom={7.5} variants={fadeIn} initial="hidden" animate="show" className="px-4">
+        <div className="mt-6">
+          <div className="text-[20px] font-bold text-white mb-3">Análisis de Stack</div>
+          <div className="bg-[#1c1c1e] rounded-2xl p-4">
+            {/* Current stack summary */}
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {SUPPLEMENTS.filter(s => s.ph <= plan.phase).map((s, i) => (
+                <span
+                  key={i}
+                  className="text-[11px] px-2 py-0.5 rounded-full"
+                  style={{
+                    background: checks[`s-${i}`] ? '#30d15815' : '#2c2c2e',
+                    color: checks[`s-${i}`] ? '#30d158' : '#636366',
+                  }}
+                >
+                  {s.n} {s.d}
+                </span>
+              ))}
+            </div>
+            <div className="text-[13px] text-zinc-500 mb-3">
+              Semana {plan.week} · Fase {plan.phase} · {SUPPLEMENTS.filter(s => s.ph <= plan.phase && checks[`s-${SUPPLEMENTS.indexOf(s)}`]).length} suplementos activos
+            </div>
+
+            {/* AI Analysis button/content */}
+            {supplementAnalysis ? (
+              <div className="text-[14px] text-zinc-300 leading-relaxed whitespace-pre-wrap">{supplementAnalysis}</div>
+            ) : (
+              <button
+                onClick={generateSupplementAnalysis}
+                disabled={suppAnalysisLoading}
+                className="press w-full py-3 rounded-xl text-[14px] font-semibold"
+                style={{ background: suppAnalysisLoading ? '#2c2c2e' : '#bf5af220', color: suppAnalysisLoading ? '#636366' : '#bf5af2' }}
+              >
+                {suppAnalysisLoading ? 'Analizando stack...' : '🧬 Analizar acumulado de suplementos'}
+              </button>
+            )}
+          </div>
         </div>
       </motion.div>
 
