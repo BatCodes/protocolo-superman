@@ -95,6 +95,35 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
     await save('food-diary', updated)
   }, [])
 
+  // ── Week day selector (computed early so activeDayMacros is available) ──
+  const [dayOffset, setDayOffset_] = useState(() => {
+    const now = new Date()
+    const dow = now.getDay()
+    return dow === 0 ? 6 : dow - 1
+  })
+  const setDayOffset = setDayOffset_
+
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - d.getDay() + 1 + i)
+    const dateStr = d.toISOString().slice(0, 10)
+    const dayOfWeek = d.getDay()
+    const isRest = dayOfWeek === 0
+    const splits = ['REST', 'PUSH', 'PULL', 'LEGS', 'PUSH', 'PULL', 'LEGS']
+    const split = splits[dayOfWeek === 0 ? 0 : dayOfWeek]
+    const isToday = dateStr === TODAY
+    return { date: dateStr, dayNum: d.getDate(), dayLabel: ['D','L','M','X','J','V','S'][dayOfWeek], isTraining: !isRest, split, isToday, index: i }
+  })
+  const selectedDay = weekDays[dayOffset] || weekDays.find(d => d.isToday) || weekDays[0]
+  const isViewingToday = selectedDay.isToday
+  const activeDayMacros = selectedDay.isTraining ? macroTargets : {
+    kcal: Math.round(macroTargets.kcal * 0.85),
+    protein: macroTargets.protein,
+    carbs: Math.round(macroTargets.carbs * 0.7),
+    fat: Math.round(macroTargets.fat * 1.1),
+    water: macroTargets.water,
+  }
+
   // ── Today's diary entries ──
   const todayEntries = diary.filter(e => e.date === TODAY)
   const todayTotals = getDiaryTotals(diary, TODAY)
@@ -126,8 +155,8 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
   const totalCarbs = todayTotals.carbs + scannedTotals.carbs + checkedMealTotals.carbs
   const totalFat = todayTotals.fat + scannedTotals.fat + checkedMealTotals.fat
 
-  const remaining = Math.max(0, macroTargets.kcal - totalKcal)
-  const kcalPct = macroTargets.kcal > 0 ? (totalKcal / macroTargets.kcal) * 100 : 0
+  const remaining = Math.max(0, activeDayMacros.kcal - totalKcal)
+  const kcalPct = activeDayMacros.kcal > 0 ? (totalKcal / activeDayMacros.kcal) * 100 : 0
 
   // Budget bar color
   const budgetColor = kcalPct > 100 ? '#ff453a' : kcalPct > 85 ? '#ff9f0a' : '#30d158'
@@ -141,7 +170,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
   }, [])
 
   const waterTotal = waterLog.reduce((a, e) => a + e.ml, 0)
-  const waterPct = Math.min(100, Math.round(waterTotal / (macroTargets.water * 1000) * 100))
+  const waterPct = Math.min(100, Math.round(waterTotal / (activeDayMacros.water * 1000) * 100))
 
   const addWater = async (ml: number) => {
     const entry = { ml, time: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) }
@@ -330,9 +359,9 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
 
   // ── Macro rows ──
   const macroRows = [
-    { label: 'Proteina', current: totalProtein, target: macroTargets.protein, color: '#64d2ff', unit: 'g' },
-    { label: 'Carbos', current: totalCarbs, target: macroTargets.carbs, color: '#ff9f0a', unit: 'g' },
-    { label: 'Grasa', current: totalFat, target: macroTargets.fat, color: '#ffd60a', unit: 'g' },
+    { label: 'Proteina', current: totalProtein, target: activeDayMacros.protein, color: '#64d2ff', unit: 'g' },
+    { label: 'Carbos', current: totalCarbs, target: activeDayMacros.carbs, color: '#ff9f0a', unit: 'g' },
+    { label: 'Grasa', current: totalFat, target: activeDayMacros.fat, color: '#ffd60a', unit: 'g' },
   ]
 
   // ── Swipe-to-delete state ──
@@ -340,6 +369,53 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
 
   return (
     <div className="pb-28 space-y-3">
+
+      {/* ── Week Selector ── */}
+      <div className="mb-4">
+        <div className="text-[13px] text-zinc-500 mb-2 px-1">Planificacion semanal</div>
+        <div className="grid grid-cols-7 gap-1.5">
+          {weekDays.map((day, i) => (
+            <button
+              key={i}
+              onClick={() => setDayOffset(i)}
+              className="press py-2 rounded-xl text-center transition-all"
+              style={{
+                background: dayOffset === i ? '#0a84ff' : day.isToday ? '#0a84ff15' : '#1c1c1e',
+                border: day.isToday && dayOffset !== i ? '1px solid #0a84ff30' : '1px solid transparent',
+              }}
+            >
+              <div className="text-[10px] font-medium" style={{ color: dayOffset === i ? '#fff' : '#8e8e93' }}>
+                {day.dayLabel}
+              </div>
+              <div className="text-[15px] font-bold" style={{ color: dayOffset === i ? '#fff' : day.isToday ? '#0a84ff' : '#fff' }}>
+                {day.dayNum}
+              </div>
+              <div className="text-[8px] mono mt-0.5" style={{ color: dayOffset === i ? '#ffffffaa' : day.isTraining ? '#30d158' : '#8e8e93' }}>
+                {day.split}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Day info */}
+        <div className="flex items-center justify-between mt-2 px-1">
+          <div className="text-[13px] text-zinc-400">
+            {isViewingToday ? 'Hoy' : selectedDay.date} · <span style={{ color: selectedDay.isTraining ? '#30d158' : '#8e8e93' }}>{selectedDay.split}</span>
+          </div>
+          <div className="text-[13px] mono" style={{ color: selectedDay.isTraining ? '#30d158' : '#ff9f0a' }}>
+            {activeDayMacros.kcal} kcal
+          </div>
+        </div>
+      </div>
+
+      {/* Future day planning banner */}
+      {!isViewingToday && (
+        <div className="bg-[#0a84ff15] border border-[#0a84ff30] rounded-2xl px-4 py-3 mb-1">
+          <div className="text-[13px] text-[#0a84ff]">
+            Planificando {selectedDay.dayLabel} {selectedDay.dayNum} — prepara las comidas con antelacion
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════ CALORIE BUDGET BAR ═══════════════════ */}
       <div className="bg-[#1c1c1e] rounded-2xl px-5 pt-5 pb-4">
@@ -365,13 +441,13 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
 
         <div className="flex items-center justify-between">
           <span className="text-[13px] text-zinc-500 mono">{totalKcal.toLocaleString()} consumidas</span>
-          <span className="text-[13px] text-zinc-500 mono">{macroTargets.kcal.toLocaleString()} objetivo</span>
+          <span className="text-[13px] text-zinc-500 mono">{activeDayMacros.kcal.toLocaleString()} objetivo</span>
         </div>
 
         {/* Sub-row: consumed / burned / net */}
         <div className="flex items-center justify-center gap-6 mt-3">
           {[
-            { label: 'Objetivo', val: macroTargets.kcal, icon: '\uD83C\uDFAF' },
+            { label: 'Objetivo', val: activeDayMacros.kcal, icon: '\uD83C\uDFAF' },
             { label: 'Comida', val: totalKcal, icon: '\uD83C\uDF74' },
             { label: 'Restante', val: remaining, icon: '\uD83D\uDD25' },
           ].map(item => (
@@ -530,7 +606,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                 {(waterTotal / 1000).toFixed(1)}L
               </div>
               <div className="text-[13px] text-zinc-500">
-                de {macroTargets.water}L objetivo
+                de {activeDayMacros.water}L objetivo
               </div>
             </div>
             <div className="w-16 h-16">
