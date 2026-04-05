@@ -38,7 +38,7 @@ const MEAL_ICONS: Record<MealSlot, string> = {
   snacks: '\uD83C\uDF6A',
 }
 
-const SEPARATOR = { borderBottom: '0.33px solid rgba(255,255,255,0.08)' }
+const SEPARATOR = { borderBottom: '0.5px solid rgba(255,255,255,0.06)' }
 
 type ModalView = 'search' | 'barcode' | 'quickadd' | 'ai-scan' | 'food-detail'
 
@@ -391,14 +391,14 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
               onClick={() => setDayOffset(i)}
               className="press py-2 rounded-xl text-center transition-all"
               style={{
-                background: dayOffset === i ? '#0a84ff' : day.isToday ? '#0a84ff15' : '#1c1c1e',
-                border: day.isToday && dayOffset !== i ? '1px solid #0a84ff30' : '1px solid transparent',
+                background: dayOffset === i ? '#4ade80' : day.isToday ? '#4ade8015' : '#1c1c1e',
+                border: day.isToday && dayOffset !== i ? '1px solid #4ade8030' : '1px solid transparent',
               }}
             >
               <div className="text-[10px] font-medium" style={{ color: dayOffset === i ? '#fff' : '#8e8e93' }}>
                 {day.dayLabel}
               </div>
-              <div className="text-[15px] font-bold" style={{ color: dayOffset === i ? '#fff' : day.isToday ? '#0a84ff' : '#fff' }}>
+              <div className="text-[15px] font-bold" style={{ color: dayOffset === i ? '#fff' : day.isToday ? '#4ade80' : '#fff' }}>
                 {day.dayNum}
               </div>
               <div className="text-[8px] mono mt-0.5" style={{ color: dayOffset === i ? '#ffffffaa' : day.isTraining ? '#30d158' : '#8e8e93' }}>
@@ -421,15 +421,15 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
 
       {/* Future day planning banner */}
       {!isViewingToday && (
-        <div className="bg-[#0a84ff15] border border-[#0a84ff30] rounded-2xl px-4 py-3 mb-1">
-          <div className="text-[13px] text-[#0a84ff]">
+        <div className="bg-[#4ade8015] border border-[#4ade8030] rounded-2xl px-4 py-3 mb-1">
+          <div className="text-[13px] text-[#4ade80]">
             Planificando {selectedDay.dayLabel} {selectedDay.dayNum} — prepara las comidas con antelacion
           </div>
         </div>
       )}
 
       {/* ═══════════════════ CALORIE BUDGET BAR ═══════════════════ */}
-      <div className="bg-[#1c1c1e] rounded-2xl px-5 pt-5 pb-4">
+      <div className="glass-card px-5 pt-5 pb-4">
         <div className="text-center mb-1">
           <div className="text-[44px] font-black mono leading-none" style={{ color: budgetColor }}>
             {remaining.toLocaleString()}
@@ -471,7 +471,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
       </div>
 
       {/* ═══════════════════ MACRO SUMMARY ═══════════════════ */}
-      <div className="bg-[#1c1c1e] rounded-2xl px-4 py-3 space-y-2.5">
+      <div className="glass-card px-4 py-3 space-y-2.5">
         {macroRows.map(row => {
           const pct = row.target > 0 ? Math.min((row.current / row.target) * 100, 100) : 0
           return (
@@ -498,7 +498,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
 
       {/* AI Nutrition Briefing */}
       {(nutritionBriefing || nbLoading) && (
-        <div className="bg-[#1c1c1e] rounded-2xl p-4 mb-4">
+        <div className="glass-card p-4 mb-4">
           <div className="text-[13px] text-zinc-500 mb-2">IA · Briefing Nutricional</div>
           {nbLoading ? (
             <div className="text-[13px] text-zinc-600 animate-pulse">Analizando nutrición...</div>
@@ -513,7 +513,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
         <div className="text-[20px] font-bold text-white mb-3">
           Plan {isViewingToday ? 'de Hoy' : `${selectedDay.dayLabel} ${selectedDay.dayNum}`}
         </div>
-        <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+        <div className="glass-card overflow-hidden">
           {dayMealPlan.map((meal, i, arr) => {
             // For training entries, compute exercise prescriptions
             const isTrainingEntry = meal.icon === '🏋️' && selectedDay.isTraining
@@ -524,7 +524,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
               <div
                 key={i}
                 className="px-4 py-3"
-                style={{ borderBottom: i < arr.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none' }}
+                style={{ borderBottom: i < arr.length - 1 ? '0.5px solid rgba(255,255,255,0.06)' : 'none' }}
               >
                 <div className="flex items-center gap-3">
                   {meal.type === 'meal' && (
@@ -561,7 +561,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                 {/* Training day — brief summary */}
                 {isTrainingEntry && dayExercises.length > 0 && (
                   <div className="mt-2 ml-9">
-                    <span className="text-[12px] mono px-2.5 py-1 rounded-full" style={{ background: '#ff9f0a15', color: '#ff9f0a' }}>
+                    <span className="text-[12px] mono px-2.5 py-1 rounded-full" style={{ background: '#4ade8015', color: '#4ade80' }}>
                       {daySplit} · {dayExercises.length} ejercicios → ver en Entreno
                     </span>
                   </div>
@@ -594,14 +594,14 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
         {/* Meal type selector in add modal will let user pick Desayuno/Almuerzo/Cena/Snack */}
 
         {todayEntries.length > 0 ? (
-          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+          <div className="glass-card overflow-hidden">
             {todayEntries.map((entry, idx, arr) => {
               const prevMeal = idx > 0 ? arr[idx - 1].meal : null
               const showHeader = entry.meal !== prevMeal
               return (
                 <div key={idx}>
                   {showHeader && (
-                    <div className="px-4 pt-3 pb-1 flex items-center gap-2" style={idx > 0 ? { borderTop: '0.33px solid rgba(255,255,255,0.12)' } : undefined}>
+                    <div className="px-4 pt-3 pb-1 flex items-center gap-2" style={idx > 0 ? { borderTop: '0.5px solid rgba(255,255,255,0.06)' } : undefined}>
                       <span className="text-[14px]">{MEAL_ICONS[entry.meal as MealSlot]}</span>
                       <span className="text-[13px] font-semibold text-zinc-400">{MEAL_LABELS[entry.meal as MealSlot]}</span>
                       <span className="text-[12px] mono text-zinc-600 ml-auto">
@@ -610,7 +610,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                     </div>
                   )}
                   <div
-                    style={{ borderBottom: idx < arr.length - 1 && arr[idx + 1]?.meal === entry.meal ? '0.33px solid rgba(255,255,255,0.06)' : 'none' }}
+                    style={{ borderBottom: idx < arr.length - 1 && arr[idx + 1]?.meal === entry.meal ? '0.5px solid rgba(255,255,255,0.06)' : 'none' }}
                   >
                     <div
                       className="flex items-center px-4 py-2.5 active:bg-white/5 transition-colors"
@@ -642,7 +642,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
             })}
           </div>
         ) : (
-          <div className="bg-[#1c1c1e] rounded-2xl p-6 text-center">
+          <div className="glass-card p-6 text-center">
             <div className="text-[28px] mb-2">🍽</div>
             <div className="text-[14px] text-zinc-500">Sin registros hoy</div>
             <div className="text-[12px] text-zinc-600 mt-1">Pulsa "Añadir" para registrar comida</div>
@@ -653,7 +653,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
       {/* ═══════════════════ WATER TRACKER ═══════════════════ */}
       <div className="mt-6">
         <div className="text-[20px] font-bold text-white mb-3">Hidratación</div>
-        <div className="bg-[#1c1c1e] rounded-2xl p-4">
+        <div className="glass-card p-4">
           {/* Progress */}
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -677,7 +677,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
           <div className="h-2 bg-white/5 rounded-full overflow-hidden mb-4">
             <motion.div
               className="h-full rounded-full"
-              style={{ background: 'linear-gradient(90deg, #64d2ff, #0a84ff)' }}
+              style={{ background: 'linear-gradient(90deg, #64d2ff, #4ade80)' }}
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(waterPct, 100)}%` }}
               transition={{ duration: 0.6 }}
@@ -694,7 +694,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
               <button
                 key={opt.ml}
                 onClick={() => addWater(opt.ml)}
-                className="press bg-[#2c2c2e] rounded-xl py-3 text-center"
+                className="press bg-white/[0.04] rounded-xl py-3 text-center"
               >
                 <div className="text-xl">{opt.icon}</div>
                 <div className="text-[13px] text-white font-medium">{opt.label}</div>
@@ -728,7 +728,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
 
           {/* Today's log */}
           {waterLog.length > 0 && (
-            <div className="mt-3" style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}>
+            <div className="mt-3" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
               <div className="pt-3 flex flex-wrap gap-1.5">
                 {waterLog.map((entry, i) => (
                   <span key={i} className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: '#64d2ff15', color: '#64d2ff' }}>
@@ -742,7 +742,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
       </div>
 
       {/* ═══════════════════ DAILY SUMMARY ═══════════════════ */}
-      <div className="bg-[#1c1c1e] rounded-2xl p-4">
+      <div className="glass-card p-4">
         <div className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider mb-3">
           Resumen del Dia
         </div>
@@ -763,7 +763,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
 
       {/* No API key warning */}
       {!hasApiKey() && (
-        <div className="bg-[#1c1c1e] rounded-2xl p-4 text-center">
+        <div className="glass-card p-4 text-center">
           <div className="text-[13px] text-zinc-500">
             Configura tu API key en ajustes para usar el scanner IA
           </div>
@@ -789,7 +789,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed inset-x-0 bottom-0 z-50 bg-[#1c1c1e] rounded-t-[20px] max-h-[92vh] flex flex-col"
+              className="fixed inset-x-0 bottom-0 z-50 glass-card rounded-t-[20px] max-h-[92vh] flex flex-col"
             >
               {/* Handle bar */}
               <div className="flex justify-center pt-2.5 pb-1">
@@ -798,7 +798,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
 
               {/* Modal header */}
               <div className="flex items-center justify-between px-4 pb-3" style={SEPARATOR}>
-                <button onClick={closeModal} className="text-[16px]" style={{ color: '#0a84ff' }}>
+                <button onClick={closeModal} className="text-[16px]" style={{ color: '#4ade80' }}>
                   Cancelar
                 </button>
                 <span className="text-[16px] font-semibold text-white">
@@ -815,7 +815,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                     onClick={() => setModalMeal(slot)}
                     className="press flex-1 py-2 rounded-xl text-center transition-all"
                     style={{
-                      background: modalMeal === slot ? '#0a84ff' : '#2c2c2e',
+                      background: modalMeal === slot ? '#4ade80' : 'rgba(255,255,255,0.04)',
                       color: modalMeal === slot ? '#fff' : '#8e8e93',
                     }}
                   >
@@ -859,24 +859,24 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                       <button
                         onClick={startScanner}
                         className="flex flex-col items-center gap-1 py-3 rounded-xl active:scale-95 transition-transform"
-                        style={{ backgroundColor: 'rgba(10,132,255,0.1)' }}
+                        style={{ backgroundColor: 'rgba(74,222,128,0.1)' }}
                       >
-                        <svg className="w-6 h-6" style={{ color: '#0a84ff' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <svg className="w-6 h-6" style={{ color: '#4ade80' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z" />
                         </svg>
-                        <span className="text-[11px] font-medium" style={{ color: '#0a84ff' }}>Codigo</span>
+                        <span className="text-[11px] font-medium" style={{ color: '#4ade80' }}>Codigo</span>
                       </button>
                       <button
                         onClick={() => setModalView('quickadd')}
                         className="flex flex-col items-center gap-1 py-3 rounded-xl active:scale-95 transition-transform"
-                        style={{ backgroundColor: 'rgba(255,159,10,0.1)' }}
+                        style={{ backgroundColor: 'rgba(74,222,128,0.1)' }}
                       >
-                        <svg className="w-6 h-6" style={{ color: '#ff9f0a' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <svg className="w-6 h-6" style={{ color: '#4ade80' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.545 5.975 5.975 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
                         </svg>
-                        <span className="text-[11px] font-medium" style={{ color: '#ff9f0a' }}>Rapida</span>
+                        <span className="text-[11px] font-medium" style={{ color: '#4ade80' }}>Rapida</span>
                       </button>
                       <button
                         onClick={() => {
@@ -1001,7 +1001,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                     <button
                       onClick={() => { stopScanner(); setModalView('search') }}
                       className="w-full mt-4 py-3 rounded-xl text-[15px] font-medium text-center"
-                      style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: '#0a84ff' }}
+                      style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: '#4ade80' }}
                     >
                       Cancelar escaneo
                     </button>
@@ -1074,7 +1074,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                     <button
                       onClick={() => setModalView('search')}
                       className="w-full py-2.5 text-[14px]"
-                      style={{ color: '#0a84ff' }}
+                      style={{ color: '#4ade80' }}
                     >
                       Volver a busqueda
                     </button>
@@ -1104,7 +1104,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
 
                     {aiScanning && (
                       <div className="py-4 text-center">
-                        <div className="text-[14px] font-semibold animate-pulse" style={{ color: '#ffd60a' }}>
+                        <div className="text-[14px] font-semibold animate-pulse" style={{ color: '#4ade80' }}>
                           Analizando comida con IA...
                         </div>
                       </div>
@@ -1138,7 +1138,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                     <button
                       onClick={() => setModalView('search')}
                       className="w-full py-2.5 text-[14px]"
-                      style={{ color: '#0a84ff' }}
+                      style={{ color: '#4ade80' }}
                     >
                       Volver a busqueda
                     </button>
@@ -1212,7 +1212,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                     <button
                       onClick={() => { setSelectedFood(null); setModalView('search') }}
                       className="w-full py-2.5 text-[14px]"
-                      style={{ color: '#0a84ff' }}
+                      style={{ color: '#4ade80' }}
                     >
                       Volver a busqueda
                     </button>

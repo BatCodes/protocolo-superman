@@ -75,7 +75,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Progress dots */}
       <div className="flex items-center justify-center gap-2 pt-14 pb-6 px-4">
         {Array.from({ length: totalSteps }).map((_, i) => (
@@ -84,7 +84,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             className="h-1 rounded-full transition-all duration-300"
             style={{
               width: i === step ? 24 : 8,
-              background: i <= step ? '#ffd60a' : 'rgba(255,255,255,0.1)',
+              background: i <= step ? '#4ade80' : 'rgba(255,255,255,0.1)',
             }}
           />
         ))}
@@ -121,7 +121,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   onChange={e => setName(e.target.value)}
                   placeholder="Tu nombre"
                   autoFocus
-                  className="w-full bg-[#1c1c1e] text-white text-[20px] px-5 py-4 rounded-2xl outline-none mb-4"
+                  className="w-full glass-card text-white text-[20px] px-5 py-4 rounded-2xl outline-none mb-4"
                 />
 
                 <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider mb-3 mt-6">Sexo biológico</p>
@@ -132,9 +132,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       onClick={() => setSex(s)}
                       className="press py-4 rounded-2xl text-[17px] font-semibold transition-all"
                       style={{
-                        background: sex === s ? '#ffd60a1a' : '#1c1c1e',
-                        color: sex === s ? '#ffd60a' : '#fff',
-                        border: sex === s ? '2px solid #ffd60a' : '2px solid transparent',
+                        background: sex === s ? '#4ade801a' : '#1c1c1e',
+                        color: sex === s ? '#4ade80' : '#fff',
+                        border: sex === s ? '2px solid #4ade80' : '2px solid transparent',
                       }}
                     >
                       {s === 'male' ? '♂ Masculino' : '♀ Femenino'}
@@ -157,7 +157,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                     { label: 'Peso actual', value: weight, set: setWeight, unit: 'kg', ph: '72', min: 30, max: 300 },
                     { label: 'Peso objetivo', value: weightGoal, set: setWeightGoal, unit: 'kg', ph: '85', min: 30, max: 300 },
                   ].map(f => (
-                    <div key={f.label} className="bg-[#1c1c1e] rounded-2xl px-5 py-3 flex items-center justify-between">
+                    <div key={f.label} className="glass-card rounded-2xl px-5 py-3 flex items-center justify-between">
                       <span className="text-[15px] text-zinc-400">{f.label}</span>
                       <div className="flex items-center gap-2">
                         <input
@@ -194,11 +194,11 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                       onClick={() => setExperience(exp.id)}
                       className="press w-full text-left px-5 py-4 rounded-2xl transition-all"
                       style={{
-                        background: experience === exp.id ? '#ffd60a1a' : '#1c1c1e',
-                        border: experience === exp.id ? '2px solid #ffd60a' : '2px solid transparent',
+                        background: experience === exp.id ? '#4ade801a' : '#1c1c1e',
+                        border: experience === exp.id ? '2px solid #4ade80' : '2px solid transparent',
                       }}
                     >
-                      <div className="text-[17px] font-semibold" style={{ color: experience === exp.id ? '#ffd60a' : '#fff' }}>
+                      <div className="text-[17px] font-semibold" style={{ color: experience === exp.id ? '#4ade80' : '#fff' }}>
                         {exp.title}
                       </div>
                       <div className="text-[13px] text-zinc-500 mt-0.5">{exp.desc}</div>
@@ -223,9 +223,9 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                         onClick={() => toggleItem(diet, setDiet, d)}
                         className="press px-4 py-3.5 rounded-2xl text-[15px] text-left transition-all"
                         style={{
-                          background: selected ? '#ffd60a1a' : '#1c1c1e',
-                          color: selected ? '#ffd60a' : '#fff',
-                          border: selected ? '2px solid #ffd60a' : '2px solid transparent',
+                          background: selected ? '#4ade801a' : '#1c1c1e',
+                          color: selected ? '#4ade80' : '#fff',
+                          border: selected ? '2px solid #4ade80' : '2px solid transparent',
                         }}
                       >
                         {d}
@@ -274,10 +274,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                   type="date"
                   value={startDate}
                   onChange={e => setStartDate(e.target.value)}
-                  className="w-full bg-[#1c1c1e] text-white text-[20px] px-5 py-4 rounded-2xl outline-none text-center mono"
+                  className="w-full glass-card text-white text-[20px] px-5 py-4 rounded-2xl outline-none text-center mono"
                 />
 
-                <div className="mt-6 bg-[#1c1c1e] rounded-2xl p-4">
+                <div className="mt-6 glass-card rounded-2xl p-4">
                   <div className="text-[13px] text-zinc-500 leading-relaxed">
                     El sistema calculará automáticamente tu día, semana, fase y milestones desde esta fecha.
                   </div>
@@ -295,7 +295,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           disabled={!canNext()}
           className="press w-full py-4 rounded-2xl text-[17px] font-semibold transition-all disabled:opacity-30"
           style={{
-            background: canNext() ? 'linear-gradient(135deg, #ffd60a, #ff9f0a)' : '#1c1c1e',
+            background: canNext() ? 'linear-gradient(135deg, #4ade80, #22c55e)' : '#1c1c1e',
             color: canNext() ? '#000' : '#666',
           }}
         >

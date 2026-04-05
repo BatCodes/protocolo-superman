@@ -166,7 +166,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
 
       {/* AI Combat Briefing */}
       {(combatBriefing || cbLoading) && (
-        <div className="bg-[#1c1c1e] rounded-2xl p-4 mb-4">
+        <div className="glass-card p-4 mb-4">
           <div className="text-[13px] text-zinc-500 mb-2">IA · Briefing de Sesión</div>
           {cbLoading ? (
             <div className="text-[13px] text-zinc-600 animate-pulse">Generando briefing...</div>
@@ -182,8 +182,8 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="bg-[#1c1c1e] rounded-2xl p-4">
-            <div className="text-[13px] font-semibold" style={{ color: '#ff9f0a' }}>
+          <div className="glass-card p-4">
+            <div className="text-[13px] font-semibold" style={{ color: '#22c55e' }}>
               {decision.action}
             </div>
             <div className="flex gap-1.5 mt-2 flex-wrap">
@@ -191,7 +191,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                 <span
                   key={i}
                   className="text-[11px] mono px-2.5 py-1 rounded-lg"
-                  style={{ background: 'rgba(255,159,10,0.12)', color: '#ff9f0a' }}
+                  style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80' }}
                 >
                   {m}
                 </span>
@@ -209,7 +209,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
             onClick={() => setSelectedDay(Math.max(0, Math.min(6, i)))}
             className="press py-2 text-center rounded-xl transition-all duration-200"
             style={{
-              background: selectedDay === i ? '#ffd60a' : '#1c1c1e',
+              background: selectedDay === i ? '#4ade80' : '#1c1c1e',
               color: selectedDay === i ? '#000' : '#8e8e93',
             }}
           >
@@ -221,7 +221,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
 
       {/* REST Day */}
       {split === 'REST' ? (
-        <div className="bg-[#1c1c1e] rounded-2xl p-8 text-center">
+        <div className="glass-card p-8 text-center">
           <div className="text-2xl mb-2">🔄</div>
           <div className="text-[15px] font-semibold text-white">Descanso</div>
           <div className="text-[13px] text-zinc-500 mt-1">Recuperacion activa. Movilidad. Caminar.</div>
@@ -236,7 +236,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
           <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
             {split}
           </p>
-          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+          <div className="glass-card overflow-hidden">
             {exercises.map((ex, i) => {
               const key = `${TODAY}-${split}-${i}`
               const sets = wkLog[key] || []
@@ -268,7 +268,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                   key={`${split}-${i}`}
                   variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
                   className="px-4 py-3"
-                  style={!isLast ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+                  style={!isLast ? { borderBottom: '0.5px solid rgba(255,255,255,0.06)' } : undefined}
                 >
                   {/* Exercise header */}
                   <div className="flex justify-between items-start mb-2">
@@ -278,8 +278,8 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                         <span
                           className="text-[10px] mono px-2 py-0.5 rounded-md"
                           style={{
-                            background: ex.t === 'T-DRIVER' ? 'rgba(255,214,10,0.15)' : 'rgba(255,69,58,0.15)',
-                            color: ex.t === 'T-DRIVER' ? '#ffd60a' : '#ff453a',
+                            background: ex.t === 'T-DRIVER' ? 'rgba(74,222,128,0.15)' : 'rgba(255,69,58,0.15)',
+                            color: ex.t === 'T-DRIVER' ? '#4ade80' : '#ff453a',
                           }}
                         >
                           {ex.t}
@@ -290,15 +290,15 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                       <button
                         onClick={(e) => { e.stopPropagation(); setOpenGuide(openGuide === i ? null : i) }}
                         className="press w-7 h-7 rounded-full flex items-center justify-center"
-                        style={{ background: openGuide === i ? '#0a84ff20' : 'rgba(255,255,255,0.06)' }}
+                        style={{ background: openGuide === i ? '#4ade8020' : 'rgba(255,255,255,0.06)' }}
                       >
-                        <Info size={14} color={openGuide === i ? '#0a84ff' : '#636366'} />
+                        <Info size={14} color={openGuide === i ? '#4ade80' : '#636366'} />
                       </button>
                       {/* Set counter */}
                       <span className="text-[12px] mono font-medium" style={{ color: sets.length >= ex.s ? '#30d158' : '#8e8e93' }}>
                         {sets.length}/{ex.s} series
                       </span>
-                      <span className="text-[13px] mono" style={{ color: '#ffd60a' }}>
+                      <span className="text-[13px] mono" style={{ color: '#4ade80' }}>
                         {ex.s}x{ex.r}
                       </span>
                     </div>
@@ -313,7 +313,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                         exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden"
                       >
-                        <div className="pt-3 pb-1" style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}>
+                        <div className="pt-3 pb-1" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
                           {/* Animated exercise demo */}
                           <ExerciseAnimation exercise={ex.n} size={100} />
 
@@ -354,7 +354,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                             <div className="text-[11px] text-zinc-500 mb-1.5">Ejecución</div>
                             {guide.steps.map((step, si) => (
                               <div key={si} className="flex gap-2 mb-1.5">
-                                <span className="text-[11px] mono w-4 flex-shrink-0" style={{ color: '#0a84ff' }}>{si + 1}</span>
+                                <span className="text-[11px] mono w-4 flex-shrink-0" style={{ color: '#4ade80' }}>{si + 1}</span>
                                 <span className="text-[13px] text-zinc-300 leading-snug">{step}</span>
                               </div>
                             ))}
@@ -366,7 +366,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                               <div className="text-[11px] text-zinc-500 mb-1">Consejos</div>
                               {guide.tips.map((tip, ti) => (
                                 <div key={ti} className="flex gap-2 mb-1">
-                                  <span className="text-[11px]" style={{ color: '#ff9f0a' }}>•</span>
+                                  <span className="text-[11px]" style={{ color: '#22c55e' }}>•</span>
                                   <span className="text-[13px] text-zinc-400 leading-snug">{tip}</span>
                                 </div>
                               ))}
@@ -394,7 +394,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                     <div className="mb-2">
                       <span
                         className="inline-block text-[11px] mono font-semibold px-2.5 py-1 rounded-full"
-                        style={{ background: 'rgba(255,214,10,0.15)', color: '#ffd60a' }}
+                        style={{ background: 'rgba(74,222,128,0.15)', color: '#4ade80' }}
                       >
                         {suggestion.message}
                       </span>
@@ -466,7 +466,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                       placeholder="kg"
                       value={inputs[`${i}w`] || ''}
                       onChange={e => setInputs({ ...inputs, [`${i}w`]: e.target.value })}
-                      className="w-16 bg-[#2c2c2e] text-white px-2.5 py-2 text-[13px] mono rounded-xl outline-none"
+                      className="w-16 bg-white/[0.04] text-white px-2.5 py-2 text-[13px] mono rounded-xl outline-none"
                     />
                     <input
                       type="number"
@@ -484,7 +484,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                           }
                         }
                       }}
-                      className="w-16 bg-[#2c2c2e] text-white px-2.5 py-2 text-[13px] mono rounded-xl outline-none"
+                      className="w-16 bg-white/[0.04] text-white px-2.5 py-2 text-[13px] mono rounded-xl outline-none"
                     />
                     <button
                       onClick={() => {
@@ -496,7 +496,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                         }
                       }}
                       className="press px-4 py-2 rounded-2xl text-[12px] font-bold mono transition-all active:scale-95"
-                      style={{ background: 'linear-gradient(135deg, #ffd60a, #ff9f0a)', color: '#000' }}
+                      style={{ background: 'linear-gradient(135deg, #4ade80, #22c55e)', color: '#000' }}
                     >
                       + SET
                     </button>
@@ -504,7 +504,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
 
                   {/* Plate Calculator for compound exercises */}
                   {ex.t === 'T-DRIVER' && sets.length > 0 && (
-                    <div className="mt-3" style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}>
+                    <div className="mt-3" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
                       <div className="pt-3">
                         <PlateCalculator weight={sets[sets.length - 1].w} />
                       </div>
@@ -524,7 +524,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 40 }}
-            className="fixed bottom-20 left-4 right-4 z-40 bg-[#1c1c1e] rounded-2xl p-4 flex items-center justify-between"
+            className="fixed bottom-20 left-4 right-4 z-40 glass-card p-4 flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
               {/* Circular progress */}
@@ -533,7 +533,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                   <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
                   <circle
                     cx="24" cy="24" r="20" fill="none"
-                    stroke={restTimer <= 10 ? '#ff453a' : '#ffd60a'}
+                    stroke={restTimer <= 10 ? '#ff453a' : '#4ade80'}
                     strokeWidth="3"
                     strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 20}
@@ -550,7 +550,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                 <div className="text-[28px] font-black mono text-white leading-none">{formatTime(restTimer)}</div>
               </div>
             </div>
-            <button onClick={skipRest} className="press px-4 py-2 rounded-xl text-[13px] font-semibold" style={{ background: '#ffd60a', color: '#000' }}>
+            <button onClick={skipRest} className="press px-4 py-2 rounded-xl text-[13px] font-semibold" style={{ background: '#4ade80', color: '#000' }}>
               Saltar
             </button>
           </motion.div>

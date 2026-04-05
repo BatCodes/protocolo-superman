@@ -67,7 +67,7 @@ export function Intel({ plan, readiness, decision, injury, profile }: IntelProps
           </div>
 
           {!hasApiKey() && (
-            <div className="bg-[#1c1c1e] rounded-2xl p-4 mb-5 w-full text-center">
+            <div className="glass-card p-4 mb-5 w-full text-center">
               <div className="text-[13px] text-zinc-500">
                 Configura tu API key en ajustes para usar Intel
               </div>
@@ -79,7 +79,7 @@ export function Intel({ plan, readiness, decision, injury, profile }: IntelProps
               <button
                 key={i}
                 onClick={() => send(q)}
-                className="press text-left text-[13px] text-zinc-400 bg-[#1c1c1e] p-3 rounded-xl active:scale-[0.97] transition-transform"
+                className="press text-left text-[13px] text-zinc-400 glass-card p-3 rounded-xl active:scale-[0.97] transition-transform"
               >
                 {q}
               </button>
@@ -100,8 +100,8 @@ export function Intel({ plan, readiness, decision, injury, profile }: IntelProps
             <div
               className={`max-w-[88%] px-4 py-3 text-[15px] leading-relaxed whitespace-pre-wrap ${
                 m.role === 'user'
-                  ? 'bg-[#ffd60a]/10 text-white rounded-[20px] rounded-br-md'
-                  : 'bg-[#1c1c1e] text-zinc-300 rounded-[20px] rounded-bl-md'
+                  ? 'bg-[#4ade80]/10 text-white rounded-[20px] rounded-br-md'
+                  : 'glass-card text-zinc-300 rounded-[20px] rounded-bl-md'
               }`}
             >
               {m.content}
@@ -111,7 +111,7 @@ export function Intel({ plan, readiness, decision, injury, profile }: IntelProps
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-[#1c1c1e] rounded-[20px] rounded-bl-md px-4 py-3">
+            <div className="glass-card rounded-[20px] rounded-bl-md px-4 py-3">
               <div className="flex gap-1.5">
                 {[0, 1, 2].map(i => (
                   <motion.div
@@ -136,13 +136,13 @@ export function Intel({ plan, readiness, decision, injury, profile }: IntelProps
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
           placeholder="Reporta, consulta..."
-          className="flex-1 bg-[#1c1c1e] text-white px-4 py-3 text-[15px] rounded-full outline-none"
+          className="flex-1 glass-card text-white px-4 py-3 text-[15px] rounded-full outline-none"
         />
         <button
           onClick={() => send()}
           disabled={loading || !input.trim()}
           className="press px-5 py-3 rounded-full text-[15px] font-bold transition-all active:scale-95 disabled:opacity-30"
-          style={{ background: 'linear-gradient(135deg, #ffd60a, #ff9f0a)', color: '#000' }}
+          style={{ background: 'linear-gradient(135deg, #4ade80, #22c55e)', color: '#000' }}
         >
           ↑
         </button>

@@ -21,12 +21,12 @@ interface ReportProps {
 }
 
 const CATEGORIES: { key: keyof Pick<HealthScoreBreakdown, 'composition' | 'cardiovascular' | 'sleep' | 'recovery' | 'activity' | 'nutrition' | 'consistency'>; label: string; color: string }[] = [
-  { key: 'composition', label: 'Composicion', color: '#ff9f0a' },
+  { key: 'composition', label: 'Composicion', color: '#22c55e' },
   { key: 'cardiovascular', label: 'Cardiovascular', color: '#ff375f' },
   { key: 'sleep', label: 'Sueno', color: '#bf5af2' },
   { key: 'recovery', label: 'Recovery', color: '#30d158' },
-  { key: 'activity', label: 'Actividad', color: '#0a84ff' },
-  { key: 'nutrition', label: 'Nutricion', color: '#ffd60a' },
+  { key: 'activity', label: 'Actividad', color: '#4ade80' },
+  { key: 'nutrition', label: 'Nutricion', color: '#4ade80' },
   { key: 'consistency', label: 'Consistencia', color: '#64d2ff' },
 ]
 
@@ -39,14 +39,14 @@ const INSIGHT_COLORS: Record<string, { bg: string; border: string; text: string;
 
 function scoreColor(score: number): string {
   if (score > 600) return '#30d158'
-  if (score > 400) return '#ffd60a'
+  if (score > 400) return '#4ade80'
   return '#ff375f'
 }
 
 function barColor(value: number): string {
   if (value >= 75) return '#30d158'
-  if (value >= 50) return '#ffd60a'
-  if (value >= 25) return '#ff9f0a'
+  if (value >= 50) return '#4ade80'
+  if (value >= 25) return '#22c55e'
   return '#ff375f'
 }
 
@@ -128,7 +128,7 @@ ${aiReport || ''}
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-12">
+    <div className="min-h-screen text-white pb-12">
       {/* ── Header ── */}
       <motion.div
         className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/5"
@@ -139,7 +139,7 @@ ${aiReport || ''}
         <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
           <button
             onClick={onClose}
-            className="flex items-center gap-1 text-[#0a84ff] text-[15px] font-medium active:opacity-60 transition-opacity"
+            className="flex items-center gap-1 text-[#4ade80] text-[15px] font-medium active:opacity-60 transition-opacity"
           >
             <ChevronLeft size={20} />
             <span>Volver</span>
@@ -149,7 +149,7 @@ ${aiReport || ''}
             onClick={shareReport}
             className="p-2 rounded-full hover:bg-white/5 active:bg-white/10 transition-colors"
           >
-            {copied ? <Check size={20} className="text-green-400" /> : <Share2 size={20} className="text-[#0a84ff]" />}
+            {copied ? <Check size={20} className="text-green-400" /> : <Share2 size={20} className="text-[#4ade80]" />}
           </button>
         </div>
       </motion.div>
@@ -157,7 +157,7 @@ ${aiReport || ''}
       <div className="max-w-lg mx-auto px-4 space-y-4 mt-4">
         {/* ── Health Score Hero ── */}
         <motion.div
-          className="bg-[#1c1c1e] rounded-2xl p-8 flex flex-col items-center"
+          className="glass-card p-8 flex flex-col items-center"
           {...fadeUp}
         >
           <Ring pct={(healthScore.total / 900) * 100} size={180} strokeWidth={10} color={heroColor}>
@@ -196,7 +196,7 @@ ${aiReport || ''}
 
         {/* ── Score Breakdown ── */}
         <motion.div
-          className="bg-[#1c1c1e] rounded-2xl p-5"
+          className="glass-card p-5"
           {...fadeUp}
           transition={{ ...fadeUp.transition, delay: 0.1 }}
         >
@@ -230,7 +230,7 @@ ${aiReport || ''}
         {/* ── Metabolic Age ── */}
         {healthScore.metabolicAge !== null && profile && (
           <motion.div
-            className="bg-[#1c1c1e] rounded-2xl p-5"
+            className="glass-card p-5"
             {...fadeUp}
             transition={{ ...fadeUp.transition, delay: 0.15 }}
           >
@@ -270,7 +270,7 @@ ${aiReport || ''}
         {/* ── Body Composition ── */}
         {report.bodyComposition.length > 0 && (
           <motion.div
-            className="bg-[#1c1c1e] rounded-2xl p-5"
+            className="glass-card p-5"
             {...fadeUp}
             transition={{ ...fadeUp.transition, delay: 0.2 }}
           >
@@ -295,7 +295,7 @@ ${aiReport || ''}
         {/* ── Weekly Summary ── */}
         {report.summary.length > 0 && (
           <motion.div
-            className="bg-[#1c1c1e] rounded-2xl p-5"
+            className="glass-card p-5"
             {...fadeUp}
             transition={{ ...fadeUp.transition, delay: 0.25 }}
           >
@@ -303,7 +303,7 @@ ${aiReport || ''}
             <ul className="space-y-2">
               {report.summary.map((line, idx) => (
                 <li key={idx} className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#0a84ff] mt-1.5 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80] mt-1.5 shrink-0" />
                   <span className="text-[14px] text-zinc-300 leading-relaxed">{line}</span>
                 </li>
               ))}
@@ -314,7 +314,7 @@ ${aiReport || ''}
         {/* ── Insights ── */}
         {insights.length > 0 && (
           <motion.div
-            className="bg-[#1c1c1e] rounded-2xl p-5"
+            className="glass-card p-5"
             {...fadeUp}
             transition={{ ...fadeUp.transition, delay: 0.3 }}
           >
@@ -349,7 +349,7 @@ ${aiReport || ''}
 
         {/* ── AI Analysis ── */}
         <motion.div
-          className="bg-[#1c1c1e] rounded-2xl p-5"
+          className="glass-card p-5"
           {...fadeUp}
           transition={{ ...fadeUp.transition, delay: 0.35 }}
         >
@@ -407,7 +407,7 @@ ${aiReport || ''}
         >
           <button
             onClick={shareReport}
-            className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-[#0a84ff] rounded-2xl text-[15px] font-semibold text-white active:scale-[0.98] transition-transform"
+            className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-[#4ade80] rounded-2xl text-[15px] font-semibold text-white active:scale-[0.98] transition-transform"
           >
             {copied ? (
               <>

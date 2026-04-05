@@ -130,7 +130,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
     <div className="pb-28 space-y-4">
       {/* AI Health Briefing */}
       {(healthBriefing || hbLoading) && (
-        <div className="bg-[#1c1c1e] rounded-2xl p-4 mb-4">
+        <div className="glass-card p-4 mb-4">
           <div className="text-[13px] text-zinc-500 mb-2">IA · Análisis de Salud</div>
           {hbLoading ? (
             <div className="text-[13px] text-zinc-600 animate-pulse">Analizando métricas...</div>
@@ -141,7 +141,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
       )}
 
       {/* Health summary */}
-      <div className="bg-[#1c1c1e] rounded-2xl px-4 py-3 flex justify-between items-center">
+      <div className="glass-card px-4 py-3 flex justify-between items-center">
         <div>
           <div className="text-[15px] font-semibold text-white">Metricas de Salud</div>
           <div className="text-[13px] text-zinc-500">Entrada manual · {filledCount}/{totalMetrics} activas</div>
@@ -163,7 +163,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
           </p>
 
           {/* iOS grouped list card */}
-          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+          <div className="glass-card overflow-hidden">
             {group.categories.map((m, idx) => {
               const entries = hd[m.id] || []
               const lastValue = entries.length > 0 ? entries[entries.length - 1].v : null
@@ -175,7 +175,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
                 <div key={m.id}>
                   <div
                     className="press px-4 py-3 flex items-center justify-between"
-                    style={!isLast || isEditing ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+                    style={!isLast || isEditing ? { borderBottom: '0.5px solid rgba(255,255,255,0.06)' } : undefined}
                     onClick={() => {
                       setEditingId(isEditing ? null : m.id)
                       setInputValue(lastValue ? String(lastValue) : '')
@@ -212,7 +212,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 py-3" style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}>
+                      <div className="px-4 py-3" style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
                         {/* Historical chart */}
                         {entries.length >= 2 && (
                           <div className="mb-3">
@@ -260,7 +260,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
                             autoFocus
                             onKeyDown={e => e.key === 'Enter' && logMetric(m.id)}
                             placeholder={m.u}
-                            className="flex-1 bg-[#2c2c2e] text-white px-3 py-2.5 text-[15px] mono rounded-xl outline-none"
+                            className="flex-1 bg-white/[0.04] text-white px-3 py-2.5 text-[15px] mono rounded-xl outline-none"
                           />
                           <button
                             onClick={() => logMetric(m.id)}
@@ -287,7 +287,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
       <input ref={pdfRef} type="file" accept="application/pdf" onChange={handlePDF} className="hidden" />
 
       <button
-        className="press w-full bg-[#1c1c1e] rounded-2xl p-4 text-center active:scale-[0.98] transition-transform"
+        className="press w-full glass-card p-4 text-center active:scale-[0.98] transition-transform"
         onClick={() => pdfRef.current?.click()}
       >
         <div className="text-[15px] font-semibold" style={{ color: '#ff453a' }}>
@@ -302,7 +302,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
 
       {pdfResult && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <div className="bg-[#1c1c1e] rounded-2xl p-4">
+          <div className="glass-card p-4">
             <div className="text-[14px] text-white leading-relaxed whitespace-pre-wrap">{pdfResult}</div>
           </div>
         </motion.div>
@@ -314,12 +314,12 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
           <p className="text-[13px] font-semibold text-zinc-400 uppercase tracking-wider px-4 mb-2">
             Historial — {medReports.length} reportes
           </p>
-          <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
+          <div className="glass-card overflow-hidden">
             {medReports.slice(-3).reverse().map((r, i) => (
               <div
                 key={r.date + r.filename}
                 className="px-4 py-3 flex justify-between items-center"
-                style={i < Math.min(medReports.length, 3) - 1 ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
+                style={i < Math.min(medReports.length, 3) - 1 ? { borderBottom: '0.5px solid rgba(255,255,255,0.06)' } : undefined}
               >
                 <span className="text-[15px] text-white mono">{r.date}</span>
                 <span className="text-[13px] text-zinc-600">{r.filename}</span>
