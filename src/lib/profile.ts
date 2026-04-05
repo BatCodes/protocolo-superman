@@ -87,49 +87,58 @@ export interface MealPlan {
   kcalPct?: number  // percentage of daily kcal for this meal
 }
 
-// Generate dynamic meal plan based on profile and macros
-export function generateMealPlan(profile: UserProfile, macros: MacroTargets, isTrainingDay: boolean): MealPlan[] {
+// Generate dynamic meal plan based on profile, macros, and day of week
+// dayOfWeek: 0=Sunday, 1=Monday, etc. Used to rotate meal variety
+export function generateMealPlan(profile: UserProfile, macros: MacroTargets, isTrainingDay: boolean, dayOfWeek?: number): MealPlan[] {
   const restrictions = profile.dietaryRestrictions.map(r => r.toLowerCase())
   const isHalal = restrictions.includes('halal')
   const isVeg = restrictions.includes('vegetariano') || restrictions.includes('vegano')
   const isVegan = restrictions.includes('vegano')
+  const day = dayOfWeek ?? new Date().getDay()
 
-  // Protein sources
-  const proteinSources = isVegan
-    ? ['tofu', 'tempeh', 'legumbres', 'seitán']
+  // Protein sources — rotated by day
+  const allProteins = isVegan
+    ? ['tofu scramble', 'tempeh a la plancha', 'garbanzos especiados', 'seitán salteado', 'lentejas', 'edamame', 'hamburguesa vegetal']
     : isVeg
-      ? ['huevos', 'yogur griego', 'queso cottage', 'tofu']
+      ? ['huevos revueltos', 'tortilla de espinacas', 'yogur griego con granola', 'queso cottage con fruta', 'huevos cocidos', 'tofu salteado', 'frittata de verduras']
       : isHalal
-        ? ['pollo halal', 'carne picada halal', 'huevos', 'pescado']
-        : ['pollo', 'carne picada', 'huevos', 'pescado', 'ternera']
+        ? ['pollo a la plancha', 'carne picada halal con especias', 'huevos revueltos con verduras', 'salmón al horno', 'pechuga de pavo halal', 'merluza a la plancha', 'ternera halal salteada']
+        : ['pechuga de pollo', 'carne picada con tomate', 'huevos revueltos', 'salmón al horno', 'pavo a la plancha', 'merluza a la plancha', 'ternera salteada']
 
-  const p = proteinSources
-  const pGrams = Math.round(macros.protein / 5) // per meal approx
+  const allCarbs = ['arroz basmati', 'boniato asado', 'pasta integral', 'quinoa', 'arroz integral', 'cuscús', 'patata cocida']
+  const allSides = ['brócoli al vapor', 'ensalada mixta', 'espinacas salteadas', 'verduras asadas', 'judías verdes', 'calabacín a la plancha', 'pimientos asados']
+  const allBreakfastBases = ['avena con plátano', 'tostadas integrales con aguacate', 'gachas de avena con frutos rojos', 'tortitas de avena', 'pan integral con tomate', 'porridge con manzana', 'avena overnight con mango']
+
+  // Rotate by day of week
+  const pick = (arr: string[], offset: number) => arr[(day + offset) % arr.length]
+
+  const pGrams = Math.round(macros.protein / 5)
+  const mealKcal = (pct: number) => Math.round((pct / 100) * macros.kcal)
 
   const plan: MealPlan[] = [
-    { time: '7:00', title: 'Despertar', desc: `Exposición solar 10min. Pesar en ayunas.`, icon: '☀️', type: 'routine' },
-    { time: '7:30', title: 'Desayuno', desc: `${p[2]} + avena + fruta. Stack AM. ~${pGrams}g proteína.`, icon: '🍳', type: 'meal', kcalPct: 20 },
-    { time: '10:30', title: 'Media mañana', desc: `Arroz + ${p[0]} + verduras. ~${pGrams}g proteína.`, icon: '🍗', type: 'meal', kcalPct: 20 },
-    { time: '13:30', title: 'Almuerzo', desc: `Boniato + ${p[1]} + ensalada. ~${pGrams}g proteína.`, icon: '🥩', type: 'meal', kcalPct: 20 },
+    { time: '7:00', title: 'Despertar', desc: 'Exposición solar 10min. Pesar en ayunas.', icon: '☀️', type: 'routine' },
+    { time: '7:30', title: 'Desayuno', desc: `${pick(allBreakfastBases, 0)} + ${pick(allProteins, 2)}. Stack AM. ~${pGrams}g prot · ${mealKcal(20)} kcal`, icon: '🍳', type: 'meal', kcalPct: 20 },
+    { time: '10:30', title: 'Media mañana', desc: `${pick(allCarbs, 0)} + ${pick(allProteins, 0)} + ${pick(allSides, 0)}. ~${pGrams}g prot · ${mealKcal(20)} kcal`, icon: '🍗', type: 'meal', kcalPct: 20 },
+    { time: '13:30', title: 'Almuerzo', desc: `${pick(allCarbs, 1)} + ${pick(allProteins, 1)} + ${pick(allSides, 1)}. ~${pGrams}g prot · ${mealKcal(20)} kcal`, icon: '🥩', type: 'meal', kcalPct: 20 },
   ]
 
   if (isTrainingDay) {
     plan.push(
-      { time: '15:30', title: 'Pre-Workout', desc: `Avena + whey + miel. ~${pGrams}g proteína.`, icon: '⚡', type: 'meal', kcalPct: 10 },
+      { time: '15:30', title: 'Pre-Workout', desc: `${pick(allBreakfastBases, 3)} + whey + miel. ~${pGrams}g prot · ${mealKcal(10)} kcal`, icon: '⚡', type: 'meal', kcalPct: 10 },
       { time: '16:00', title: 'Entrenamiento', desc: 'Sesión de entreno.', icon: '🏋️', type: 'routine' },
-      { time: '19:00', title: 'Post-Workout', desc: `Whey + arroz + ${p[0]}. Ventana anabólica. ~${pGrams}g proteína.`, icon: '🍚', type: 'meal', kcalPct: 20 },
+      { time: '19:00', title: 'Post-Workout', desc: `Whey + ${pick(allCarbs, 2)} + ${pick(allProteins, 3)}. Ventana anabólica. ~${pGrams}g prot · ${mealKcal(20)} kcal`, icon: '🍚', type: 'meal', kcalPct: 20 },
       { time: '19:30', title: 'Sauna', desc: 'Protocolo térmico post-entreno.', icon: '🔥', type: 'routine' },
     )
   } else {
     plan.push(
-      { time: '16:00', title: 'Merienda', desc: `${isVegan ? 'Batido proteína vegetal' : 'Yogur griego'} + frutos secos. ~${pGrams}g proteína.`, icon: '🥜', type: 'meal', kcalPct: 10 },
+      { time: '16:00', title: 'Merienda', desc: `${isVegan ? 'Batido proteína vegetal' : 'Yogur griego'} + ${pick(['almendras', 'nueces', 'anacardos', 'mix frutos secos', 'cacahuetes', 'pistachos', 'avellanas'], 0)}. ~${pGrams}g prot · ${mealKcal(10)} kcal`, icon: '🥜', type: 'meal', kcalPct: 10 },
       { time: '17:00', title: 'Actividad ligera', desc: 'Caminar 30min / movilidad / yoga.', icon: '🚶', type: 'routine' },
     )
   }
 
   plan.push(
     { time: '21:00', title: 'Toque de queda', desc: 'Sin pantallas. Preparar sueño.', icon: '📱', type: 'routine' },
-    { time: '22:00', title: 'Pre-bed', desc: `${isVegan ? 'Proteína caseína vegetal' : 'Yogur'} + almendras + Mg. Stack PM.`, icon: '🌙', type: 'meal', kcalPct: 10 },
+    { time: '22:00', title: 'Pre-bed', desc: `${isVegan ? 'Caseína vegetal' : 'Yogur griego'} + ${pick(['almendras', 'nueces de macadamia', 'mantequilla de cacahuete', 'semillas de chía', 'queso cottage', 'requesón', 'kéfir'], 0)} + Mg. Stack PM. ~${mealKcal(10)} kcal`, icon: '🌙', type: 'meal', kcalPct: 10 },
     { time: '22:30', title: 'Lights Out', desc: 'Objetivo: dormido antes de 23:00.', icon: '💤', type: 'routine' },
   )
 
