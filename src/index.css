@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════
-   PROTOCOLO SUPERMAN — Apple Design System
+   PROTOCOLO SUPERMAN — Bevel/Hume Design System
+   Inspired by Bevel Health & Hume AI wellness aesthetic
    ═══════════════════════════════════════════════════════════ */
 
 @layer base {
@@ -16,45 +17,32 @@
   }
 
   html {
-    background: #000000;
+    background: #0a0a0a;
     color-scheme: dark;
-    scroll-behavior: smooth;
   }
 
   body {
-    font-family:
-      -apple-system,
-      'SF Pro Display',
-      'SF Pro Text',
-      'Helvetica Neue',
-      system-ui,
-      sans-serif;
-    background: #000000;
-    color: #f5f5f7;
+    font-family: 'Inter', -apple-system, 'SF Pro Display', system-ui, sans-serif;
+    background: #0a0a0a;
+    color: #f0f0f0;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     overscroll-behavior: none;
     min-height: 100vh;
     min-height: 100dvh;
-    touch-action: pan-y;
+    line-height: 1.5;
   }
 
   ::selection {
-    background: rgba(255, 214, 10, 0.2);
+    background: rgba(74, 222, 128, 0.2);
     color: #fff;
   }
 
   ::-webkit-scrollbar { width: 0; height: 0; }
 
   input::-webkit-outer-spin-button,
-  input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  input[type="number"] {
-    -moz-appearance: textfield;
-  }
+  input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
 }
 
 @layer components {
@@ -62,31 +50,73 @@
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
   }
 
-  /* SF Mono for numeric data */
+  /* Bevel Liquid Glass */
+  .glass {
+    background: rgba(20, 20, 20, 0.65);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    backdrop-filter: saturate(180%) blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .glass-card {
+    background: rgba(26, 26, 26, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+  }
+
+  .glass-card-hover {
+    background: rgba(26, 26, 26, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    transition: all 0.2s ease;
+  }
+  .glass-card-hover:active {
+    transform: scale(0.98);
+    background: rgba(30, 30, 30, 0.9);
+  }
+
+  /* Bevel Score Colors */
+  .score-excellent { color: #4ade80; }
+  .score-good { color: #a3e635; }
+  .score-fair { color: #fbbf24; }
+  .score-low { color: #f97316; }
+  .score-critical { color: #ef4444; }
+
+  /* Monospace for data */
   .mono {
-    font-family: 'SF Mono', 'Menlo', ui-monospace, monospace;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', ui-monospace, monospace;
     font-feature-settings: 'tnum' 1, 'zero' 1;
   }
 
-  /* iOS press effect */
+  /* Press effect */
   .press {
-    transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), opacity 0.12s ease;
+    transition: transform 0.1s ease, opacity 0.1s ease;
   }
   .press:active {
     transform: scale(0.97);
     opacity: 0.85;
   }
 
-  /* Apple frosted glass */
-  .frosted {
-    background: rgba(28, 28, 30, 0.72);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    backdrop-filter: saturate(180%) blur(20px);
+  /* Bevel gradient accents */
+  .gradient-green {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+  }
+  .gradient-blue {
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  }
+  .gradient-amber {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  }
+  .gradient-rose {
+    background: linear-gradient(135deg, #fb7185, #e11d48);
+  }
+  .gradient-purple {
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
   }
 
-  /* iOS separator */
-  .separator {
-    height: 0.33px;
-    background: rgba(255, 255, 255, 0.08);
+  /* Separator */
+  .sep {
+    height: 0.5px;
+    background: rgba(255, 255, 255, 0.06);
   }
 }

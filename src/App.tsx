@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useApp } from './hooks/useApp'
-import { Ring } from './components/ui/Ring'
 import type { TabId } from './lib/types'
 import { Dashboard } from './pages/Dashboard'
 import { Combat } from './pages/Combat'
@@ -22,11 +21,11 @@ import {
 } from 'lucide-react'
 
 const tabs: { id: TabId; label: string; Icon: typeof LayoutGrid }[] = [
-  { id: 'cmd', label: 'Resumen', Icon: LayoutGrid },
+  { id: 'cmd', label: 'Inicio', Icon: LayoutGrid },
   { id: 'combat', label: 'Entreno', Icon: Dumbbell },
   { id: 'fuel', label: 'Nutrición', Icon: UtensilsCrossed },
   { id: 'recon', label: 'Salud', Icon: Heart },
-  { id: 'intel', label: 'Intel', Icon: MessageCircle },
+  { id: 'intel', label: 'IA', Icon: MessageCircle },
 ]
 
 export default function App() {
@@ -34,38 +33,27 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false)
   const [showReport, setShowReport] = useState(false)
 
-  // Loading
+  // Loading — simple green pulse dot
   if (!app.loaded) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a0a' }}>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center"
+          className="flex flex-col items-center gap-4"
         >
           <motion.div
-            className="w-[60px] h-[60px] mx-auto mb-5 rounded-[14px] flex items-center justify-center"
-            style={{ background: 'linear-gradient(145deg, #ffd60a, #ff9f0a)' }}
-            animate={{ scale: [1, 1.04, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <span className="text-[22px] font-black text-black">S</span>
-          </motion.div>
-          <motion.div
-            className="flex gap-1 justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            {[0, 1, 2].map(i => (
-              <motion.div
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-zinc-600"
-                animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
-              />
-            ))}
-          </motion.div>
+            className="w-3 h-3 rounded-full"
+            style={{ background: '#4ade80' }}
+            animate={{
+              scale: [1, 1.6, 1],
+              opacity: [0.6, 1, 0.6],
+            }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <span className="text-[12px] text-zinc-600 font-medium tracking-wide">
+            Cargando
+          </span>
         </motion.div>
       </div>
     )
@@ -94,47 +82,47 @@ export default function App() {
     />
   }
 
-  const readyColor = app.readiness.score >= 70 ? '#30d158' : app.readiness.score >= 50 ? '#ff9f0a' : '#ff453a'
-
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* ─── Navigation Bar ─── */}
+    <div className="min-h-screen text-white" style={{ background: '#0a0a0a' }}>
+      {/* ─── Header ─── */}
       <div
-        className="sticky top-0 z-50 frosted"
+        className="sticky top-0 z-50 glass"
         style={{
           paddingTop: 'env(safe-area-inset-top, 0px)',
-          borderBottom: '0.33px solid rgba(255,255,255,0.08)',
+          borderBottom: '0.5px solid rgba(255,255,255,0.06)',
         }}
       >
-        <div className="px-4 h-11 flex justify-between items-center">
+        <div className="px-4 py-2.5 flex justify-between items-center">
           <div>
             <div className="text-[11px] text-zinc-500 leading-none">
-              Día {app.plan.day} · Semana {app.plan.week}
+              Semana {app.plan.week} · Día {app.plan.day}
             </div>
-            <div className="text-[17px] font-semibold leading-tight" style={{ color: '#ffd60a' }}>
+            <div className="text-[17px] font-semibold leading-tight text-white">
               {app.plan.phaseName}
             </div>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowReport(true)}
               className="w-[30px] h-[30px] rounded-full flex items-center justify-center press"
-              style={{ background: 'rgba(255,255,255,0.08)' }}
+              style={{ background: 'rgba(255,255,255,0.06)' }}
             >
-              <FileText size={15} strokeWidth={1.8} className="text-zinc-400" />
+              <FileText size={16} strokeWidth={1.8} className="text-zinc-400" />
             </button>
             <button
               onClick={() => setShowSettings(true)}
               className="w-[30px] h-[30px] rounded-full flex items-center justify-center press"
-              style={{ background: 'rgba(255,255,255,0.08)' }}
+              style={{ background: 'rgba(255,255,255,0.06)' }}
             >
-              <SettingsIcon size={15} strokeWidth={1.8} className="text-zinc-400" />
+              <SettingsIcon size={16} strokeWidth={1.8} className="text-zinc-400" />
             </button>
-            <Ring pct={app.readiness.score} size={30} strokeWidth={3} color={readyColor}>
-              <span className="text-[10px] font-bold mono" style={{ color: readyColor }}>
-                {app.readiness.score}
-              </span>
-            </Ring>
+            {/* Health Score pill */}
+            <div
+              className="px-2.5 py-1 rounded-full text-[12px] font-semibold mono"
+              style={{ background: '#4ade8015', color: '#4ade80' }}
+            >
+              {healthScore.total}
+            </div>
           </div>
         </div>
       </div>
@@ -147,7 +135,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.12 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
           >
             {app.tab === 'cmd' && (
               <Dashboard
@@ -156,6 +144,7 @@ export default function App() {
                 hd={app.hd} briefing={app.briefing} briefingLoading={app.briefingLoading}
                 wkLog={app.wkLog} checks={app.checks} toggle={app.toggle}
                 scannedMeals={app.scannedMeals} mealPlan={app.mealPlan} macros={app.macros}
+                healthScore={healthScore}
               />
             )}
             {app.tab === 'combat' && (
@@ -181,15 +170,15 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {/* ─── Tab Bar (iOS) ─── */}
+      {/* ─── Tab Bar (Bevel) ─── */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 frosted safe-bottom"
-        style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}
+        className="fixed bottom-0 left-0 right-0 z-50 glass safe-bottom"
+        style={{ borderTop: '0.5px solid rgba(255,255,255,0.06)' }}
       >
         <div className="grid grid-cols-5 pt-1.5 pb-0.5">
           {tabs.map(({ id, label, Icon }) => {
             const active = app.tab === id
-            const color = active ? '#0a84ff' : '#48484a'
+            const color = active ? '#4ade80' : '#525252'
             return (
               <button
                 key={id}
