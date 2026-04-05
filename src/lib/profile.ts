@@ -85,64 +85,78 @@ export interface MealPlan {
   icon: string
   type: 'meal' | 'routine'
   kcalPct?: number  // percentage of daily kcal for this meal
+  kcal?: number      // exact calories
+  tBoost?: string    // T-optimization reason
 }
 
 // Generate dynamic meal plan based on profile, macros, and day of week
-// dayOfWeek: 0=Sunday, 1=Monday, etc. Used to rotate meal variety
-export function generateMealPlan(profile: UserProfile, macros: MacroTargets, isTrainingDay: boolean, dayOfWeek?: number): MealPlan[] {
-  const restrictions = profile.dietaryRestrictions.map(r => r.toLowerCase())
-  const isHalal = restrictions.includes('halal')
-  const isVeg = restrictions.includes('vegetariano') || restrictions.includes('vegano')
-  const isVegan = restrictions.includes('vegano')
+// dayOfWeek: 0=Sunday, 1=Monday, etc. Used to determine split
+export function generateMealPlan(_profile: UserProfile, _macros: MacroTargets, _isTrainingDay: boolean, dayOfWeek?: number): MealPlan[] {
+  // Determine split from day of week
+  const splits = ['REST', 'PUSH', 'PULL', 'LEGS', 'PUSH', 'PULL', 'LEGS']
   const day = dayOfWeek ?? new Date().getDay()
+  const split = splits[day === 0 ? 0 : day]
 
-  // Protein sources — rotated by day
-  const allProteins = isVegan
-    ? ['tofu scramble', 'tempeh a la plancha', 'garbanzos especiados', 'seitán salteado', 'lentejas', 'edamame', 'hamburguesa vegetal']
-    : isVeg
-      ? ['huevos revueltos', 'tortilla de espinacas', 'yogur griego con granola', 'queso cottage con fruta', 'huevos cocidos', 'tofu salteado', 'frittata de verduras']
-      : isHalal
-        ? ['pollo a la plancha', 'carne picada halal con especias', 'huevos revueltos con verduras', 'salmón al horno', 'pechuga de pavo halal', 'merluza a la plancha', 'ternera halal salteada']
-        : ['pechuga de pollo', 'carne picada con tomate', 'huevos revueltos', 'salmón al horno', 'pavo a la plancha', 'merluza a la plancha', 'ternera salteada']
+  // Total kcal per split for percentage calculations
+  const splitTotalKcal: Record<string, number> = {
+    PUSH: 750 + 580 + 700 + 420 + 700,  // 3150
+    PULL: 780 + 530 + 720 + 400 + 700,  // 3130
+    LEGS: 820 + 600 + 800 + 550 + 780,  // 3550
+    REST: 620 + 450 + 620 + 350 + 560,  // 2600
+  }
+  const totalKcal = splitTotalKcal[split] || 3150
+  const pct = (kcal: number) => Math.round((kcal / totalKcal) * 100)
 
-  const allCarbs = ['arroz basmati', 'boniato asado', 'pasta integral', 'quinoa', 'arroz integral', 'cuscús', 'patata cocida']
-  const allSides = ['brócoli al vapor', 'ensalada mixta', 'espinacas salteadas', 'verduras asadas', 'judías verdes', 'calabacín a la plancha', 'pimientos asados']
-  const allBreakfastBases = ['avena con plátano', 'tostadas integrales con aguacate', 'gachas de avena con frutos rojos', 'tortitas de avena', 'pan integral con tomate', 'porridge con manzana', 'avena overnight con mango']
-
-  // Rotate by day of week
-  const pick = (arr: string[], offset: number) => arr[(day + offset) % arr.length]
-
-  const pGrams = Math.round(macros.protein / 5)
-  const mealKcal = (pct: number) => Math.round((pct / 100) * macros.kcal)
-
-  const plan: MealPlan[] = [
-    { time: '7:00', title: 'Despertar', desc: 'Exposición solar 10min. Pesar en ayunas.', icon: '☀️', type: 'routine' },
-    { time: '7:30', title: 'Desayuno', desc: `${pick(allBreakfastBases, 0)} + ${pick(allProteins, 2)}. Stack AM. ~${pGrams}g prot · ${mealKcal(20)} kcal`, icon: '🍳', type: 'meal', kcalPct: 20 },
-    { time: '10:30', title: 'Media mañana', desc: `${pick(allCarbs, 0)} + ${pick(allProteins, 0)} + ${pick(allSides, 0)}. ~${pGrams}g prot · ${mealKcal(20)} kcal`, icon: '🍗', type: 'meal', kcalPct: 20 },
-    { time: '13:30', title: 'Almuerzo', desc: `${pick(allCarbs, 1)} + ${pick(allProteins, 1)} + ${pick(allSides, 1)}. ~${pGrams}g prot · ${mealKcal(20)} kcal`, icon: '🥩', type: 'meal', kcalPct: 20 },
-  ]
-
-  if (isTrainingDay) {
-    plan.push(
-      { time: '15:30', title: 'Pre-Workout', desc: `${pick(allBreakfastBases, 3)} + whey + miel. ~${pGrams}g prot · ${mealKcal(10)} kcal`, icon: '⚡', type: 'meal', kcalPct: 10 },
-      { time: '16:00', title: 'Entrenamiento', desc: 'Sesión de entreno.', icon: '🏋️', type: 'routine' },
-      { time: '19:00', title: 'Post-Workout', desc: `Whey + ${pick(allCarbs, 2)} + ${pick(allProteins, 3)}. Ventana anabólica. ~${pGrams}g prot · ${mealKcal(20)} kcal`, icon: '🍚', type: 'meal', kcalPct: 20 },
-      { time: '19:30', title: 'Sauna', desc: 'Protocolo térmico post-entreno.', icon: '🔥', type: 'routine' },
-    )
-  } else {
-    plan.push(
-      { time: '16:00', title: 'Merienda', desc: `${isVegan ? 'Batido proteína vegetal' : 'Yogur griego'} + ${pick(['almendras', 'nueces', 'anacardos', 'mix frutos secos', 'cacahuetes', 'pistachos', 'avellanas'], 0)}. ~${pGrams}g prot · ${mealKcal(10)} kcal`, icon: '🥜', type: 'meal', kcalPct: 10 },
-      { time: '17:00', title: 'Actividad ligera', desc: 'Caminar 30min / movilidad / yoga.', icon: '🚶', type: 'routine' },
-    )
+  if (split === 'PUSH') {
+    return [
+      { time: '7:00', title: 'Desayuno', desc: '5 huevos enteros en mantequilla + 2 tostadas sourdough + aguacate (medio) + nueces de Brasil (4)', icon: '🍳', type: 'meal', kcal: 750, kcalPct: pct(750), tBoost: 'Colesterol + grasa sat + selenio = T' },
+      { time: '10:30', title: 'Media mañana', desc: 'Yogur griego entero (250g) + avena (60g) + miel + frutos rojos + semillas calabaza (30g)', icon: '🥣', type: 'meal', kcal: 580, kcalPct: pct(580), tBoost: 'Zinc calabaza, probióticos gut-T' },
+      { time: '13:30', title: 'Almuerzo', desc: '200g ternera halal picada (80/20) + 200g arroz basmati + ensalada AOVE + ajo', icon: '🥩', type: 'meal', kcal: 700, kcalPct: pct(700), tBoost: 'Zinc rojo + B12, AOVE boost T' },
+      { time: '16:30', title: 'Pre-entreno', desc: 'Tortitas arroz (3) + miel + plátano + whey shake', icon: '⚡', type: 'meal', kcal: 420, kcalPct: pct(420), tBoost: 'Carbs rápidos para entrenar' },
+      { time: '17:00', title: 'Entrenamiento', desc: 'Sesión PUSH. Sin límite de tiempo.', icon: '🏋️', type: 'routine' },
+      { time: '19:30', title: 'Post-entreno', desc: '200g cordero halal + boniato (300g) + brócoli + zumo granada (200ml)', icon: '🍖', type: 'meal', kcal: 700, kcalPct: pct(700), tBoost: 'Cordero=rey zinc, granada +24%T' },
+      { time: '21:00', title: 'Toque de queda', desc: 'Sin pantallas. Preparar sueño.', icon: '📱', type: 'routine' },
+      { time: '22:30', title: 'Lights Out', desc: 'Objetivo: dormido antes de 23:00.', icon: '💤', type: 'routine' },
+    ]
   }
 
-  plan.push(
-    { time: '21:00', title: 'Toque de queda', desc: 'Sin pantallas. Preparar sueño.', icon: '📱', type: 'routine' },
-    { time: '22:00', title: 'Pre-bed', desc: `${isVegan ? 'Caseína vegetal' : 'Yogur griego'} + ${pick(['almendras', 'nueces de macadamia', 'mantequilla de cacahuete', 'semillas de chía', 'queso cottage', 'requesón', 'kéfir'], 0)} + Mg. Stack PM. ~${mealKcal(10)} kcal`, icon: '🌙', type: 'meal', kcalPct: 10 },
-    { time: '22:30', title: 'Lights Out', desc: 'Objetivo: dormido antes de 23:00.', icon: '💤', type: 'routine' },
-  )
+  if (split === 'PULL') {
+    return [
+      { time: '7:00', title: 'Desayuno', desc: '5 huevos enteros en ghee + avena (80g) con leche entera + plátano + nueces', icon: '🍳', type: 'meal', kcal: 780, kcalPct: pct(780), tBoost: 'Ghee: grasa saturada hormonal' },
+      { time: '10:30', title: 'Media mañana', desc: 'Whey shake + yogur griego (200g) + miel + nueces (30g) + granada', icon: '🥣', type: 'meal', kcal: 530, kcalPct: pct(530), tBoost: 'Nueces: omega-3, granada: T booster' },
+      { time: '13:30', title: 'Almuerzo', desc: '250g pollo halal muslo (con piel) + 250g arroz + espinacas + AOVE + ajo + cebolla', icon: '🍗', type: 'meal', kcal: 720, kcalPct: pct(720), tBoost: 'Cebolla+ajo: boost T en estudios' },
+      { time: '16:30', title: 'Pre-entreno', desc: 'Tortitas arroz + miel + plátano + shot de jengibre', icon: '⚡', type: 'meal', kcal: 400, kcalPct: pct(400), tBoost: 'Jengibre: meta-análisis +17% T' },
+      { time: '17:00', title: 'Entrenamiento', desc: 'Sesión PULL. Sin límite de tiempo.', icon: '🏋️', type: 'routine' },
+      { time: '19:30', title: 'Post-entreno', desc: '200g ternera halal + boniato (300g) + verduras crucíferas + mantequilla', icon: '🥩', type: 'meal', kcal: 700, kcalPct: pct(700), tBoost: 'Crucíferas: precursor DIM anti-estro' },
+      { time: '21:00', title: 'Toque de queda', desc: 'Sin pantallas. Preparar sueño.', icon: '📱', type: 'routine' },
+      { time: '22:30', title: 'Lights Out', desc: 'Objetivo: dormido antes de 23:00.', icon: '💤', type: 'routine' },
+    ]
+  }
 
-  return plan
+  if (split === 'LEGS') {
+    return [
+      { time: '7:00', title: 'Desayuno', desc: '6 huevos (5 enteros + 1 clara) en aceite coco + avena (80g) leche entera + miel + frutos secos (40g)', icon: '🍳', type: 'meal', kcal: 820, kcalPct: pct(820), tBoost: 'Aceite coco MCTs: producción hormonal' },
+      { time: '10:30', title: 'Media mañana', desc: 'Yogur griego entero (250g) + granola + whey + granada + semillas calabaza', icon: '🥣', type: 'meal', kcal: 600, kcalPct: pct(600), tBoost: 'Zinc + probióticos + fruta T-boost' },
+      { time: '13:30', title: 'Almuerzo', desc: '250g cordero halal o bistec + 300g arroz + espinacas + AOVE + cebolla cruda', icon: '🥩', type: 'meal', kcal: 800, kcalPct: pct(800), tBoost: 'Carne roja 5x/sem: zinc, hierro, B12' },
+      { time: '16:30', title: 'Pre-entreno', desc: 'Arroz + whey + plátano + dátiles + zumo remolacha (100ml)', icon: '⚡', type: 'meal', kcal: 550, kcalPct: pct(550), tBoost: 'Remolacha: óxido nítrico' },
+      { time: '17:00', title: 'Entrenamiento', desc: 'Sesión LEGS. Sin límite de tiempo.', icon: '🏋️', type: 'routine' },
+      { time: '19:30', title: 'Post-entreno', desc: '250g pollo/cordero halal + boniato (350g) + crucíferas + mantequilla + cúrcuma', icon: '🍖', type: 'meal', kcal: 780, kcalPct: pct(780), tBoost: 'Día piernas: más calorías para recup' },
+      { time: '21:00', title: 'Toque de queda', desc: 'Sin pantallas. Preparar sueño.', icon: '📱', type: 'routine' },
+      { time: '22:30', title: 'Lights Out', desc: 'Objetivo: dormido antes de 23:00.', icon: '💤', type: 'routine' },
+    ]
+  }
+
+  // REST (Domingo)
+  return [
+    { time: '8:00', title: 'Desayuno', desc: '4 huevos enteros + 2 claras + avena (60g) + frutos rojos + nueces Brasil', icon: '🍳', type: 'meal', kcal: 620, kcalPct: pct(620), tBoost: 'Día descanso: menos carbs, misma grasa' },
+    { time: '11:00', title: 'Media mañana', desc: 'Whey shake + yogur griego (200g) + semillas calabaza + manzana', icon: '🥣', type: 'meal', kcal: 450, kcalPct: pct(450), tBoost: 'Mantener proteína alta en descanso' },
+    { time: '14:00', title: 'Almuerzo', desc: '200g ternera halal + 150g arroz + ensalada enorme + AOVE + cebolla + ajo', icon: '🥩', type: 'meal', kcal: 620, kcalPct: pct(620), tBoost: 'Carne roja incluso en descanso' },
+    { time: '17:00', title: 'Merienda', desc: 'Tortitas arroz (2) + mantequilla almendra + plátano', icon: '🥜', type: 'meal', kcal: 350, kcalPct: pct(350), tBoost: 'Grasas saludables mantenidas' },
+    { time: '17:30', title: 'Actividad ligera', desc: 'Caminar 30min / movilidad / yoga.', icon: '🚶', type: 'routine' },
+    { time: '20:00', title: 'Cena', desc: '200g salmón/pescado + boniato (200g) + verduras + limón', icon: '🐟', type: 'meal', kcal: 560, kcalPct: pct(560), tBoost: 'Omega-3 directo del pescado' },
+    { time: '21:00', title: 'Toque de queda', desc: 'Sin pantallas. Preparar sueño.', icon: '📱', type: 'routine' },
+    { time: '22:30', title: 'Lights Out', desc: 'Objetivo: dormido antes de 23:00.', icon: '💤', type: 'routine' },
+  ]
 }
 
 // Build AI system prompt from profile

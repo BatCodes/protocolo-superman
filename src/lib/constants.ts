@@ -61,17 +61,29 @@ export const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'] as const
 // SUPPLEMENTS
 // ═══════════════════════════════════════════════════════════
 export const SUPPLEMENTS: Supplement[] = [
-  { n: 'Creatina', d: '5g', ev: 'A', tb: false, ph: 1 },
-  { n: 'Vit D3', d: '5000IU', ev: 'A', tb: true, ph: 1 },
-  { n: 'Zinc', d: '30mg', ev: 'A', tb: true, ph: 1 },
-  { n: 'Magnesio', d: '400mg', ev: 'A', tb: true, ph: 1 },
-  { n: 'Omega-3', d: '3g', ev: 'A', tb: false, ph: 1 },
-  { n: 'Whey', d: '40g', ev: 'A', tb: false, ph: 1 },
-  { n: 'K2', d: '200mcg', ev: 'A', tb: false, ph: 1 },
-  { n: 'Tongkat Ali', d: '400mg', ev: 'B', tb: true, ph: 2 },
-  { n: 'Ashwagandha', d: '600mg', ev: 'A', tb: true, ph: 2 },
-  { n: 'Boro', d: '10mg', ev: 'B', tb: true, ph: 2 },
-  { n: 'Fadogia', d: '600mg', ev: 'C', tb: true, ph: 3 },
+  // FASE 1 (Sem 1-12)
+  { n: 'Creatina Monohidrato', d: '5g', ev: 'A', tb: false, ph: 1, timing: 'Cualquier hora' },
+  { n: 'Whey Protein Halal', d: '1-2 scoops', ev: 'A', tb: false, ph: 1, timing: 'Post-entreno' },
+  { n: 'Vitamina D3', d: '5000 IU', ev: 'A', tb: true, ph: 1, timing: 'Mañana con grasa' },
+  { n: 'Omega-3 EPA/DHA', d: '3g', ev: 'A', tb: false, ph: 1, timing: 'Con comidas' },
+  { n: 'Magnesio Glicinato', d: '400-500mg', ev: 'A', tb: true, ph: 1, timing: 'Antes de dormir' },
+  { n: 'Zinc Picolinato', d: '30mg', ev: 'A', tb: true, ph: 1, timing: 'Antes de dormir' },
+  { n: 'Boro', d: '10mg', ev: 'B', tb: true, ph: 1, timing: 'Mañana' },
+  { n: 'Ashwagandha KSM-66', d: '600mg', ev: 'A', tb: true, ph: 1, timing: 'Mañana' },
+  { n: 'Vitamina K2 MK-7', d: '200mcg', ev: 'A', tb: false, ph: 1, timing: 'Con Vit D3' },
+  // FASE 2 (Sem 13-30) — adds these
+  { n: 'Tongkat Ali', d: '400mg', ev: 'B', tb: true, ph: 2, timing: 'Mañana' },
+  { n: 'Fadogia Agrestis', d: '600mg', ev: 'C', tb: true, ph: 2, timing: 'Mañana', cycle: '8 semanas on / 4 off' },
+  { n: 'DIM', d: '200mg', ev: 'B', tb: true, ph: 2, timing: 'Con cena' },
+  // FASE 3 (Sem 31-60) — adds these
+  { n: 'Caseína Halal', d: '1 scoop', ev: 'A', tb: false, ph: 3, timing: 'Antes de dormir' },
+  { n: 'Fenogreco', d: '500mg', ev: 'B', tb: true, ph: 3, timing: 'Con comida' },
+  { n: 'Citrulina Malato', d: '8g', ev: 'A', tb: false, ph: 3, timing: 'Pre-entreno' },
+  { n: 'Shilajit', d: '500mg', ev: 'B', tb: true, ph: 3, timing: 'Mañana' },
+  // FASE 4 - CUT (Sem 61-76) — adds these
+  { n: 'L-Carnitina L-Tartrato', d: '2g', ev: 'A', tb: false, ph: 4, timing: 'Mañana' },
+  { n: 'Cafeína', d: '200mg', ev: 'A', tb: false, ph: 4, timing: 'Pre-entreno (antes 14h)' },
+  { n: 'Fosfatidilserina', d: '600mg', ev: 'B', tb: false, ph: 4, timing: 'Post-entreno' },
 ]
 
 // ═══════════════════════════════════════════════════════════

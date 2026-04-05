@@ -125,6 +125,8 @@ export interface Supplement {
   ev: string  // evidence tier
   tb: boolean // testosterone booster
   ph: number  // phase when introduced
+  timing: string // when to take
+  cycle?: string // cycling instructions
 }
 
 export interface HealthCategory {
