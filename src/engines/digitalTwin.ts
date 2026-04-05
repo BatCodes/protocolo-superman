@@ -314,7 +314,7 @@ export function buildWeeklyReportPrompt(
 ${profileCtx}
 Semana ${report.weekNumber}. ${report.dateRange}.
 
-HEALTH SCORE: ${healthScore.total}/100
+HEALTH SCORE: ${healthScore.total}/900
 - Composición: ${healthScore.composition}/100
 - Cardiovascular: ${healthScore.cardiovascular}/100
 - Sueño: ${healthScore.sleep}/100

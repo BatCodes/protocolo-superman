@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import type { Plan, ReadinessResult, DecisionResult, InjuryResult, BloodResult, PredictionResult, HealthData, WorkoutLog, ScannedMeal } from '../lib/types'
 import type { MealPlan } from '../lib/profile'
-import { SUPPLEMENTS } from '../lib/constants'
+import { SUPPLEMENTS, WORKOUTS } from '../lib/constants'
 import { Ring } from '../components/ui/Ring'
 import { Chart } from '../components/ui/Chart'
-// API imports available for future AI briefings
 
 import { computeSupplementHistory, generateStackSummary, type SupplementHistory } from '../engines/supplementTracker'
 import { computeStrain, computeEnergyBank } from '../engines/strain'
@@ -102,21 +101,25 @@ function ActivityRings({
 }
 
 export function Dashboard({
-  plan, readiness, decision, injury: _injury, blood, predictions: _predictions,
-  hd, briefing, briefingLoading, wkLog, checks, toggle, mealPlan, macros,
+  plan, readiness, decision, injury, blood,
+  hd, briefing, briefingLoading, wkLog, checks, toggle, scannedMeals, mealPlan, macros,
 }: DashboardProps) {
   // ── Workout completion ──
-  const TODAY = new Date().toISOString().slice(0, 10)
+  const TODAY_LOCAL = new Date().toLocaleDateString('sv')
   const todaySets = Object.entries(wkLog)
-    .filter(([key]) => key.startsWith(TODAY))
+    .filter(([key]) => key.startsWith(TODAY_LOCAL))
     .reduce((sum, [, sets]) => sum + sets.length, 0)
-  const targetSets = plan.split === 'REST' ? 0 : 28
+  const targetSets = plan.split === 'REST' ? 0 : (WORKOUTS[plan.split] || []).reduce((sum, ex) => sum + ex.s, 0)
   const workoutPct = targetSets > 0 ? Math.min(100, Math.round(todaySets / targetSets * 100)) : 100
 
   // ── Nutrition completion ──
   const totalMeals = mealPlan.filter(m => m.type === 'meal').length || 1
-  const mealsChecked = mealPlan.filter((_, i) => checks[`meal-${i}`]).length
+  const mealsChecked = mealPlan.filter((m, i) => m.type === 'meal' && checks[`meal-${i}`]).length
   const nutritionPct = Math.min(100, Math.round(mealsChecked / totalMeals * 100))
+
+  // ── Consumed kcal (scanned + checked meals) ──
+  const todayScanned = scannedMeals.filter(m => m.date === TODAY_LOCAL)
+  const consumedKcal = todayScanned.reduce((a, m) => a + m.kcal, 0) + (mealsChecked * Math.round(macros.kcal / totalMeals))
 
   // ── Readiness ──
   const readinessPct = Math.min(100, Math.max(0, readiness.score))
@@ -136,12 +139,13 @@ export function Dashboard({
   const [suppHistory, setSuppHistory] = useState<SupplementHistory[]>([])
   const [stackSummary, setStackSummary] = useState('')
 
+  const suppCheckKey = SUPPLEMENTS.filter(s => s.ph <= plan.phase).map((_, i) => checks[`s-${i}`] ? '1' : '0').join('')
   useEffect(() => {
     computeSupplementHistory(plan, checks).then(history => {
       setSuppHistory(history)
       setStackSummary(generateStackSummary(history))
     })
-  }, [plan.day, plan.phase, checks])
+  }, [plan.day, plan.phase, suppCheckKey])
 
   return (
     <div className="pb-28 bg-black min-h-screen">
@@ -172,7 +176,7 @@ export function Dashboard({
             Nutrición
           </span>
           <span className="text-[13px] text-zinc-400 mono">
-            {macros.kcal}/3200 kcal
+            {consumedKcal}/{macros.kcal} kcal
           </span>
           <span className="text-[13px] text-zinc-700 mx-1">·</span>
           <span className="text-[13px] font-semibold" style={{ color: '#64d2ff' }}>
@@ -340,7 +344,7 @@ export function Dashboard({
         {/* Macro summary below meals */}
         <div className="mt-3 flex justify-center">
           <span className="text-[12px] text-zinc-500 mono">
-            {macros.kcal} kcal · {macros.protein}P · {macros.carbs}C · {macros.fat}G · {macros.water}ml
+            {macros.kcal} kcal · {macros.protein}P · {macros.carbs}C · {macros.fat}G · {macros.water}L
           </span>
         </div>
       </motion.div>
@@ -457,6 +461,26 @@ export function Dashboard({
                 <div key={i} className="flex items-center gap-2.5 py-1.5">
                   <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-zinc-500" />
                   <span className="text-[14px] text-zinc-400">{r}</span>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Injury risk */}
+          {injury.level !== 'LOW' && (
+            <>
+              <div
+                className="pt-3 mt-2 mb-2"
+                style={{ borderTop: '0.33px solid rgba(255,255,255,0.08)' }}
+              >
+                <span className="text-[13px]" style={{ color: injury.level === 'HIGH' ? '#ff453a' : '#ff9f0a' }}>
+                  Riesgo de lesión: {injury.level} ({injury.risk}%)
+                </span>
+              </div>
+              {injury.factors.map((f, i) => (
+                <div key={i} className="flex items-center gap-2.5 py-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: injury.level === 'HIGH' ? '#ff453a' : '#ff9f0a' }} />
+                  <span className="text-[14px] text-zinc-400">{f}</span>
                 </div>
               ))}
             </>

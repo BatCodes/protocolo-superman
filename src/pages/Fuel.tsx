@@ -39,21 +39,18 @@ const MEAL_ICONS: Record<MealSlot, string> = {
   snacks: '\uD83C\uDF6A',
 }
 
-const TODAY = new Date().toISOString().slice(0, 10)
-
 const SEPARATOR = { borderBottom: '0.33px solid rgba(255,255,255,0.08)' }
 
 type ModalView = 'search' | 'barcode' | 'quickadd' | 'ai-scan' | 'food-detail'
 
-export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, toggle: _toggle, mealPlan, profile, wkLog, plan }: FuelProps) {
+export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, toggle, mealPlan, profile, wkLog, plan }: FuelProps) {
+  const TODAY_LOCAL = new Date().toLocaleDateString('sv')
+
   const [nutritionBriefing, setNutritionBriefing] = useState<string | null>(null)
   const [nbLoading, setNbLoading] = useState(false)
 
   // ── Diary state ──
   const [diary, setDiary] = useState<DiaryEntry[]>([])
-  const [collapsedMeals, setCollapsedMeals] = useState<Record<MealSlot, boolean>>({
-    breakfast: false, lunch: false, dinner: false, snacks: false,
-  })
 
   // ── Add food modal ──
   const [modalOpen, setModalOpen] = useState(false)
@@ -105,12 +102,11 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
   }, [])
 
   // ── Week day selector (computed early so activeDayMacros is available) ──
-  const [dayOffset, setDayOffset_] = useState(() => {
+  const [dayOffset, setDayOffset] = useState(() => {
     const now = new Date()
     const dow = now.getDay()
     return dow === 0 ? 6 : dow - 1
   })
-  const setDayOffset = setDayOffset_
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
@@ -120,7 +116,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
     const isRest = dayOfWeek === 0
     const splits = ['REST', 'PUSH', 'PULL', 'LEGS', 'PUSH', 'PULL', 'LEGS']
     const split = splits[dayOfWeek === 0 ? 0 : dayOfWeek]
-    const isToday = dateStr === TODAY
+    const isToday = dateStr === TODAY_LOCAL
     return { date: dateStr, dayNum: d.getDate(), dayLabel: ['D','L','M','X','J','V','S'][dayOfWeek], isTraining: !isRest, split, isToday, index: i }
   })
   const selectedDay = weekDays[dayOffset] || weekDays.find(d => d.isToday) || weekDays[0]
@@ -138,10 +134,10 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
     if (!profile) return mealPlan
     const dayMacros = computeMacros(profile, plan.phase, selectedDay.isTraining)
     return generateMealPlan(profile, dayMacros, selectedDay.isTraining)
-  }, [profile, mealPlan, selectedDay.isTraining, plan.phase])
+  }, [profile, selectedDay.isTraining, plan.phase])
 
   useEffect(() => {
-    if (!hasApiKey() || nutritionBriefing) return
+    if (!hasApiKey() || nutritionBriefing || !activeDayMacros.kcal) return
     setNbLoading(true)
     const mealsDone = mealPlan.filter((_, i) => checks[`meal-${i}`]).length
     callClaude(
@@ -150,14 +146,14 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
       250
     ).then(t => { setNutritionBriefing(t); setNbLoading(false) })
       .catch(() => setNbLoading(false))
-  }, [])
+  }, [activeDayMacros.kcal, selectedDay.isTraining])
 
   // ── Today's diary entries ──
-  const todayEntries = diary.filter(e => e.date === TODAY)
-  const todayTotals = getDiaryTotals(diary, TODAY)
+  const todayEntries = diary.filter(e => e.date === TODAY_LOCAL)
+  const todayTotals = getDiaryTotals(diary, TODAY_LOCAL)
 
   // ── Also include scanned meals in totals ──
-  const todayScanned = scannedMeals.filter(m => m.date === TODAY)
+  const todayScanned = scannedMeals.filter(m => m.date === TODAY_LOCAL)
   const scannedTotals = todayScanned.reduce(
     (acc, m) => ({ kcal: acc.kcal + m.kcal, protein: acc.protein + m.protein, carbs: acc.carbs + m.carbs, fat: acc.fat + m.fat }),
     { kcal: 0, protein: 0, carbs: 0, fat: 0 }
@@ -167,12 +163,12 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
   const checkedMealTotals = mealPlan.reduce(
     (acc, meal, i) => {
       if (meal.type !== 'meal' || !checks[`meal-${i}`] || !meal.kcalPct) return acc
-      const mealKcal = Math.round((meal.kcalPct / 100) * macroTargets.kcal)
+      const mealKcal = Math.round((meal.kcalPct / 100) * activeDayMacros.kcal)
       return {
         kcal: acc.kcal + mealKcal,
-        protein: acc.protein + Math.round((meal.kcalPct / 100) * macroTargets.protein),
-        carbs: acc.carbs + Math.round((meal.kcalPct / 100) * macroTargets.carbs),
-        fat: acc.fat + Math.round((meal.kcalPct / 100) * macroTargets.fat),
+        protein: acc.protein + Math.round((meal.kcalPct / 100) * activeDayMacros.protein),
+        carbs: acc.carbs + Math.round((meal.kcalPct / 100) * activeDayMacros.carbs),
+        fat: acc.fat + Math.round((meal.kcalPct / 100) * activeDayMacros.fat),
       }
     },
     { kcal: 0, protein: 0, carbs: 0, fat: 0 }
@@ -194,7 +190,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
   const [customMl, setCustomMl] = useState(250)
 
   useEffect(() => {
-    load<{ml: number, time: string}[]>('water-' + TODAY, []).then(setWaterLog)
+    load<{ml: number, time: string}[]>('water-' + TODAY_LOCAL, []).then(setWaterLog)
   }, [])
 
   const waterTotal = waterLog.reduce((a, e) => a + e.ml, 0)
@@ -204,12 +200,8 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
     const entry = { ml, time: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) }
     const updated = [...waterLog, entry]
     setWaterLog(updated)
-    await save('water-' + TODAY, updated)
+    await save('water-' + TODAY_LOCAL, updated)
   }
-
-  // ── Meal section entries ──
-  const mealEntries = (meal: MealSlot) => todayEntries.filter(e => e.meal === meal)
-  const mealKcal = (meal: MealSlot) => getDiaryTotals(diary, TODAY, meal).kcal
 
   // ── Search with debounce ──
   const handleSearch = useCallback((q: string) => {
@@ -230,7 +222,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
       food,
       servings: numServings,
       meal,
-      date: TODAY,
+      date: TODAY_LOCAL,
       time: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }),
     }
     const updated = [...diary, entry]
@@ -240,7 +232,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
   // ── Delete entry ──
   const deleteEntry = useCallback(async (index: number) => {
     const todayIdx = diary.reduce<number[]>((acc, e, i) => {
-      if (e.date === TODAY) acc.push(i)
+      if (e.date === TODAY_LOCAL) acc.push(i)
       return acc
     }, [])
     if (index >= todayIdx.length) return
@@ -249,22 +241,7 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
     await saveDiary(updated)
   }, [diary, saveDiary])
 
-  // ── Open modal ──
-  const openAddFood = (meal: MealSlot) => {
-    setModalMeal(meal)
-    setModalView('search')
-    setSearchQuery('')
-    setSearchResults([])
-    setSelectedFood(null)
-    setServings(1)
-    setQuickKcal('')
-    setQuickProtein('')
-    setQuickCarbs('')
-    setQuickFat('')
-    setAiPreview(null)
-    setAiDesc('')
-    setModalOpen(true)
-  }
+  // openAddFood removed — modal opens inline via setModalOpen(true)
 
   // ── Barcode scanner ──
   const startScanner = async () => {
@@ -350,12 +327,13 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
       // Also save to scannedMeals for backward compat
       const meal: ScannedMeal = {
         ...parsed,
-        date: TODAY,
+        date: TODAY_LOCAL,
         time: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }),
         photo: `data:${mt};base64,${b64}`,
       }
-      setScannedMeals(prev => [...prev, meal])
-      await save('scanned-meals', [...scannedMeals, meal])
+      let updated: ScannedMeal[] = []
+      setScannedMeals(prev => { updated = [...prev, meal]; return updated })
+      await save('scanned-meals', updated)
     } catch {
       /* error */
     }
@@ -544,10 +522,26 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
                 style={{ borderBottom: i < arr.length - 1 ? '0.33px solid rgba(255,255,255,0.08)' : 'none' }}
               >
                 <div className="flex items-center gap-3">
+                  {meal.type === 'meal' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggle(`meal-${i}`) }}
+                      className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                      style={{
+                        borderColor: checks[`meal-${i}`] ? '#30d158' : 'rgba(255,255,255,0.2)',
+                        background: checks[`meal-${i}`] ? '#30d158' : 'transparent',
+                      }}
+                    >
+                      {checks[`meal-${i}`] && (
+                        <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
                   <span className="text-xl flex-shrink-0">{meal.icon}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-[15px] text-white font-medium">{meal.title}</span>
+                      <span className={`text-[15px] font-medium ${checks[`meal-${i}`] ? 'text-zinc-500 line-through' : 'text-white'}`}>{meal.title}</span>
                       <span className="text-[12px] mono text-zinc-500">{meal.time}</span>
                     </div>
                     <div className="text-[13px] text-zinc-500 mt-0.5 leading-snug">{meal.desc}</div>
@@ -696,116 +690,6 @@ export function Fuel({ scannedMeals, setScannedMeals, macroTargets, checks, togg
           </div>
         )}
       </div>
-
-      {/* LEGACY: hidden meal slot iteration for backward compat */}
-      {false && (['breakfast', 'lunch', 'dinner', 'snacks'] as MealSlot[]).map(slot => {
-        const entries = mealEntries(slot)
-        const kcal = mealKcal(slot)
-        const collapsed = collapsedMeals[slot]
-        const globalIdx = todayEntries.reduce<number[]>((acc, e, i) => {
-          if (e.meal === slot) acc.push(i)
-          return acc
-        }, [])
-
-        return (
-          <div key={slot} className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
-            {/* Section header */}
-            <button
-              className="w-full flex items-center justify-between px-4 py-3 active:bg-white/5 transition-colors"
-              onClick={() => setCollapsedMeals(prev => ({ ...prev, [slot]: !prev[slot] }))}
-            >
-              <div className="flex items-center gap-2.5">
-                <span className="text-[18px]">{MEAL_ICONS[slot]}</span>
-                <span className="text-[15px] font-semibold text-white">{MEAL_LABELS[slot]}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[14px] mono text-zinc-400">{kcal} kcal</span>
-                <svg
-                  className="w-4 h-4 text-zinc-500 transition-transform"
-                  style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </button>
-
-            <AnimatePresence initial={false}>
-              {!collapsed && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  className="overflow-hidden"
-                >
-                  {/* Food entries */}
-                  {entries.map((entry, idx) => (
-                    <div
-                      key={idx}
-                      className="relative overflow-hidden"
-                      style={SEPARATOR}
-                    >
-                      <div
-                        className="flex items-center px-4 py-2.5 active:bg-white/5 transition-colors"
-                        onClick={() => setSwipingIdx(swipingIdx === globalIdx[idx] ? null : globalIdx[idx])}
-                      >
-                        {entry.food.image && (
-                          <img src={entry.food.image} alt="" className="w-9 h-9 rounded-lg object-cover mr-3 flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[14px] text-white truncate">{entry.food.name}</div>
-                          <div className="text-[12px] text-zinc-500 truncate">
-                            {entry.food.brand ? `${entry.food.brand} · ` : ''}{entry.food.serving}{entry.servings > 1 ? ` x${entry.servings}` : ''}
-                          </div>
-                        </div>
-                        <div className="text-[14px] mono text-zinc-300 ml-2 flex-shrink-0">
-                          {Math.round(entry.food.kcal * entry.servings)}
-                        </div>
-                      </div>
-                      {/* Delete button (tap to reveal) */}
-                      <AnimatePresence>
-                        {swipingIdx === globalIdx[idx] && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="flex justify-end px-4 pb-2"
-                          >
-                            <button
-                              onClick={(e) => { e.stopPropagation(); deleteEntry(globalIdx[idx]); setSwipingIdx(null) }}
-                              className="px-4 py-1.5 rounded-lg text-[13px] font-medium"
-                              style={{ backgroundColor: 'rgba(255,69,58,0.15)', color: '#ff453a' }}
-                            >
-                              Eliminar
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ))}
-
-                  {/* Add food button */}
-                  <button
-                    onClick={() => openAddFood(slot)}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 active:bg-white/5 transition-colors"
-                  >
-                    <div
-                      className="w-5 h-5 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: 'rgba(48,209,88,0.15)' }}
-                    >
-                      <svg className="w-3 h-3" style={{ color: '#30d158' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                      </svg>
-                    </div>
-                    <span className="text-[14px]" style={{ color: '#30d158' }}>Anadir alimento</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )
-      })}
 
       {/* ═══════════════════ WATER TRACKER ═══════════════════ */}
       <div className="mt-6">

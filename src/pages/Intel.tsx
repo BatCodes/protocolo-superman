@@ -1,22 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import type { Plan, HealthData, WorkoutLog, ScannedMeal, ReadinessResult, DecisionResult, InjuryResult, ChatMessage } from '../lib/types'
+import type { Plan, ReadinessResult, DecisionResult, InjuryResult, ChatMessage } from '../lib/types'
 import { AI_SYSTEM_PROMPT, QUICK_PROMPTS } from '../lib/constants'
 import { callClaude, hasApiKey } from '../lib/api'
 import { load, save } from '../lib/storage'
+import { buildAIPrompt } from '../lib/profile'
 
 interface IntelProps {
   plan: Plan
-  hd: HealthData
-  checks: Record<string, boolean>
-  scannedMeals: ScannedMeal[]
-  wkLog: WorkoutLog
   readiness: ReadinessResult
   decision: DecisionResult
   injury: InjuryResult
+  profile: import('../lib/profile').UserProfile | null
 }
 
-export function Intel({ plan, readiness, decision, injury }: IntelProps) {
+export function Intel({ plan, readiness, decision, injury, profile }: IntelProps) {
   const [msgs, setMsgs] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,12 +38,13 @@ export function Intel({ plan, readiness, decision, injury }: IntelProps) {
     setInput('')
     setLoading(true)
 
-    const ctx = `\nSITREP: Dia ${plan.day}, Sem ${plan.week}, ${plan.phaseName}, ${plan.split}. Readiness: ${readiness.score}/100. ACWR: ${readiness.acwr.toFixed(2)}. Injury Risk: ${injury.risk}%. Decision: ${decision.mode}. Reasons: ${readiness.reasons.join('; ')}`
+    const ctx = `\nSITREP: Dia ${plan.day}, Sem ${plan.week}, ${plan.phaseName}, ${plan.split}. Readiness: ${readiness.score}/100. ACWR: ${readiness.acwr?.toFixed(2) ?? 'N/A'}. Injury Risk: ${injury.risk}%. Decision: ${decision.mode}. Reasons: ${readiness.reasons.join('; ')}`
+    const sysPrompt = profile ? buildAIPrompt(profile) : AI_SYSTEM_PROMPT
 
     try {
       const reply = await callClaude(
         updated.slice(-20).map(m => ({ role: m.role, content: m.content })),
-        AI_SYSTEM_PROMPT + ctx,
+        sysPrompt + ctx,
       )
       const final = [...updated, { role: 'assistant' as const, content: reply }]
       setMsgs(final)
@@ -79,7 +78,7 @@ export function Intel({ plan, readiness, decision, injury }: IntelProps) {
             {QUICK_PROMPTS.map((q, i) => (
               <button
                 key={i}
-                onClick={() => { setInput(q); send(q) }}
+                onClick={() => send(q)}
                 className="press text-left text-[13px] text-zinc-400 bg-[#1c1c1e] p-3 rounded-xl active:scale-[0.97] transition-transform"
               >
                 {q}

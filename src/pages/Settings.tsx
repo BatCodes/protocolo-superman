@@ -11,7 +11,11 @@ export function Settings({ onClose }: SettingsProps) {
   const [saved, setSaved] = useState(false)
 
   const handleSave = () => {
-    setApiKey(key.trim())
+    if (!key.trim()) {
+      localStorage.removeItem('anthropic-api-key')
+    } else {
+      setApiKey(key.trim())
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }

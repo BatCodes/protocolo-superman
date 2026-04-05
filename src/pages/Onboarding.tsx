@@ -59,7 +59,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   const canNext = () => {
     switch(step) {
       case 0: return name.trim().length > 0
-      case 1: return age && height && weight && weightGoal
+      case 1: return age && height && weight && weightGoal && parseFloat(age) > 0 && parseFloat(height) > 0 && parseFloat(weight) > 0 && parseFloat(weightGoal) > 0
       case 2: return true // experience always has default
       case 3: return true // diet can be empty
       case 4: return true // injuries can be empty
@@ -152,10 +152,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
                 <div className="space-y-3">
                   {[
-                    { label: 'Edad', value: age, set: setAge, unit: 'años', ph: '25' },
-                    { label: 'Altura', value: height, set: setHeight, unit: 'cm', ph: '175' },
-                    { label: 'Peso actual', value: weight, set: setWeight, unit: 'kg', ph: '72' },
-                    { label: 'Peso objetivo', value: weightGoal, set: setWeightGoal, unit: 'kg', ph: '85' },
+                    { label: 'Edad', value: age, set: setAge, unit: 'años', ph: '25', min: 10, max: 100 },
+                    { label: 'Altura', value: height, set: setHeight, unit: 'cm', ph: '175', min: 100, max: 250 },
+                    { label: 'Peso actual', value: weight, set: setWeight, unit: 'kg', ph: '72', min: 30, max: 300 },
+                    { label: 'Peso objetivo', value: weightGoal, set: setWeightGoal, unit: 'kg', ph: '85', min: 30, max: 300 },
                   ].map(f => (
                     <div key={f.label} className="bg-[#1c1c1e] rounded-2xl px-5 py-3 flex items-center justify-between">
                       <span className="text-[15px] text-zinc-400">{f.label}</span>
@@ -165,6 +165,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                           value={f.value}
                           onChange={e => f.set(e.target.value)}
                           placeholder={f.ph}
+                          min={f.min}
+                          max={f.max}
                           className="w-20 bg-transparent text-right text-[20px] font-semibold text-white mono outline-none"
                         />
                         <span className="text-[13px] text-zinc-600 w-8">{f.unit}</span>

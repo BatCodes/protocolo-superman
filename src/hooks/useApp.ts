@@ -7,12 +7,16 @@ import { computeInjuryRisk } from '../engines/injury'
 import { computeDecision } from '../engines/decision'
 import { computePredictions } from '../engines/predictions'
 import { getBloodWork } from '../engines/blood'
+import { computeHealthScore } from '../engines/healthScore'
+import { generateInsights, generateWeeklyReportData } from '../engines/digitalTwin'
 import { callClaude, hasApiKey } from '../lib/api'
 import { AI_SYSTEM_PROMPT, DAILY_MEALS } from '../lib/constants'
 import type { UserProfile } from '../lib/profile'
 import { computeMacros, generateMealPlan, buildAIPrompt, type MacroTargets, type MealPlan } from '../lib/profile'
 
-const TODAY = new Date().toISOString().slice(0, 10)
+function getToday(): string {
+  return new Date().toLocaleDateString('sv')
+}
 
 const DEFAULT_MACROS: MacroTargets = { kcal: 3000, protein: 180, carbs: 350, fat: 70, water: 3.2 }
 
@@ -35,7 +39,7 @@ export function useApp() {
     (async () => {
       const [sd, ch, h, wk, s, m, p] = await Promise.all([
         load<string | null>('start-date', null),
-        load<Record<string, boolean>>(`ck-${TODAY}`, {}),
+        load<Record<string, boolean>>(`ck-${getToday()}`, {}),
         load<HealthData>('health-data', {}),
         load<WorkoutLog>('wk-log', {}),
         load<ScannedMeal[]>('scanned-meals', []),
@@ -54,14 +58,14 @@ export function useApp() {
     })()
   }, [])
 
-  // Computed values
-  const plan = getPlan(startDate)
+  // Computed values (memoized)
+  const plan = useMemo(() => getPlan(startDate), [startDate])
   const isTrainingDay = plan.split !== 'REST'
-  const readiness = computeReadiness(hd, wkLog)
-  const injury = computeInjuryRisk(readiness, hd, wkLog, plan)
-  const decision = computeDecision(readiness, injury, plan)
-  const predictions = computePredictions(wkLog, hd, plan)
-  const blood = getBloodWork(plan.week, medReports.length > 0 ? medReports[medReports.length - 1].date : null)
+  const readiness = useMemo(() => computeReadiness(hd, wkLog), [hd, wkLog])
+  const injury = useMemo(() => computeInjuryRisk(readiness, hd, wkLog, plan), [readiness, hd, wkLog, plan])
+  const decision = useMemo(() => computeDecision(readiness, injury, plan), [readiness, injury, plan])
+  const predictions = useMemo(() => computePredictions(wkLog, hd, plan), [wkLog, hd, plan])
+  const blood = useMemo(() => getBloodWork(plan.week, medReports.length > 0 ? medReports[medReports.length - 1].date : null), [plan.week, medReports])
 
   // Dynamic macros and meal plan
   const macros: MacroTargets = useMemo(() => {
@@ -78,16 +82,9 @@ export function useApp() {
   const toggle = useCallback(async (id: string) => {
     setChecks(prev => {
       const updated = { ...prev, [id]: !prev[id] }
-      save(`ck-${TODAY}`, updated)
+      save(`ck-${getToday()}`, updated)
       return updated
     })
-  }, [])
-
-  // Start protocol
-  const startProtocol = useCallback(async (date: string) => {
-    await save('start-date', date)
-    setStartDate(date)
-    setSetup(false)
   }, [])
 
   // Save profile and set start date from profile
@@ -103,7 +100,7 @@ export function useApp() {
   useEffect(() => {
     if (!loaded || !startDate || !hasApiKey()) return
     ;(async () => {
-      const cached = await load<string | null>(`br-${TODAY}`, null)
+      const cached = await load<string | null>(`br-${getToday()}`, null)
       if (cached) { setBriefing(cached); return }
       setBriefingLoading(true)
       const systemPrompt = profile ? buildAIPrompt(profile) : AI_SYSTEM_PROMPT
@@ -117,7 +114,7 @@ export function useApp() {
           500
         )
         setBriefing(text)
-        await save(`br-${TODAY}`, text)
+        await save(`br-${getToday()}`, text)
       } catch {
         setBriefing('\u26a0 Error generando briefing. Verifica tu API key.')
       }
@@ -125,6 +122,22 @@ export function useApp() {
     })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, startDate])
+
+  // Health score and insights (M6 - memoized)
+  const healthScore = useMemo(
+    () => computeHealthScore(hd, wkLog, checks, profile?.age ?? 25, readiness.score),
+    [hd, wkLog, checks, profile?.age, readiness.score]
+  )
+
+  const insights = useMemo(
+    () => generateInsights(hd, wkLog, healthScore, readiness, plan),
+    [hd, wkLog, healthScore, readiness, plan]
+  )
+
+  const weeklyReport = useMemo(
+    () => generateWeeklyReportData(hd, wkLog, healthScore, plan),
+    [hd, wkLog, healthScore, plan]
+  )
 
   return {
     // State
@@ -141,7 +154,8 @@ export function useApp() {
     // Computed
     plan, readiness, injury, decision, predictions, blood,
     macros, mealPlan,
+    healthScore, insights, weeklyReport,
     // Actions
-    toggle, startProtocol, saveProfile,
+    toggle, saveProfile,
   }
 }

@@ -18,8 +18,6 @@ interface CombatProps {
   decision: DecisionResult
 }
 
-const TODAY = new Date().toISOString().slice(0, 10)
-
 const EXERCISE_VIDEOS: Record<string, string> = {
   'Bench Press': 'rT7DgCr-3pg',
   'OHP': 'QAQ64hK4Xxs',
@@ -60,7 +58,8 @@ function formatDuration(ms: number): string {
 }
 
 export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
-  const [selectedDay, setSelectedDay] = useState(plan.dayIdx)
+  const TODAY = new Date().toLocaleDateString('sv')
+  const [selectedDay, setSelectedDay] = useState(Math.max(0, Math.min(6, plan.dayIdx)))
   const [inputs, setInputs] = useState<Record<string, string>>({})
   const [restTimer, setRestTimer] = useState(0)
   const [restTotal, setRestTotal] = useState(0)
@@ -77,20 +76,13 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
   const split = SPLITS[selectedDay]
   const exercises = WORKOUTS[split] || []
 
-  // Session duration timer
+  // Cleanup intervals on unmount
   useEffect(() => {
-    if (sessionStartRef.current && !sessionIntervalRef.current) {
-      sessionIntervalRef.current = setInterval(() => {
-        setSessionElapsed(Date.now() - (sessionStartRef.current || Date.now()))
-      }, 1000)
-    }
     return () => {
-      if (sessionIntervalRef.current) {
-        clearInterval(sessionIntervalRef.current)
-        sessionIntervalRef.current = null
-      }
+      if (sessionIntervalRef.current) clearInterval(sessionIntervalRef.current)
+      if (restIntervalRef.current) clearInterval(restIntervalRef.current)
     }
-  }, [sessionElapsed])
+  }, [])
 
   // Rest timer countdown
   useEffect(() => {
@@ -107,16 +99,10 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
         })
       }, 1000)
     }
-    return () => {
-      if (restTimer <= 0 && restIntervalRef.current) {
-        clearInterval(restIntervalRef.current)
-        restIntervalRef.current = null
-      }
-    }
   }, [restTimer])
 
   useEffect(() => {
-    if (!hasApiKey() || combatBriefing) return
+    if (!hasApiKey() || combatBriefing || cbLoading) return
     setCbLoading(true)
     const todaySetsCount = Object.entries(wkLog).filter(([k]) => k.startsWith(TODAY)).reduce((sum, [, s]) => sum + s.length, 0)
     callClaude(
@@ -125,7 +111,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
       300
     ).then(t => { setCombatBriefing(t); setCbLoading(false) })
       .catch(() => setCbLoading(false))
-  }, [])
+  }, [split, decision.mode]) // only re-run when split or decision changes
 
   const startRestTimer = useCallback((isCompound: boolean) => {
     if (restIntervalRef.current) {
@@ -220,7 +206,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
         {DAY_LABELS.map((d, i) => (
           <button
             key={i}
-            onClick={() => setSelectedDay(i)}
+            onClick={() => setSelectedDay(Math.max(0, Math.min(6, i)))}
             className="press py-2 text-center rounded-xl transition-all duration-200"
             style={{
               background: selectedDay === i ? '#ffd60a' : '#1c1c1e',
@@ -487,6 +473,7 @@ export function Combat({ plan, wkLog, setWkLog, decision }: CombatProps) {
                       placeholder="reps"
                       value={inputs[`${i}r`] || ''}
                       onChange={e => setInputs({ ...inputs, [`${i}r`]: e.target.value })}
+                      // inputs state is already updated by onChange before Enter fires, so reading from state here is safe
                       onKeyDown={e => {
                         if (e.key === 'Enter') {
                           const w = parseFloat(inputs[`${i}w`])

@@ -11,8 +11,6 @@ import { Intel } from './pages/Intel'
 import { Settings } from './pages/Settings'
 import { Onboarding } from './pages/Onboarding'
 import Report from './pages/Report'
-import { computeHealthScore } from './engines/healthScore'
-import { generateInsights, generateWeeklyReportData } from './engines/digitalTwin'
 import {
   LayoutGrid,
   Dumbbell,
@@ -22,6 +20,14 @@ import {
   Settings as SettingsIcon,
   FileText,
 } from 'lucide-react'
+
+const tabs: { id: TabId; label: string; Icon: typeof LayoutGrid }[] = [
+  { id: 'cmd', label: 'Resumen', Icon: LayoutGrid },
+  { id: 'combat', label: 'Entreno', Icon: Dumbbell },
+  { id: 'fuel', label: 'Nutrición', Icon: UtensilsCrossed },
+  { id: 'recon', label: 'Salud', Icon: Heart },
+  { id: 'intel', label: 'Intel', Icon: MessageCircle },
+]
 
 export default function App() {
   const app = useApp()
@@ -70,9 +76,7 @@ export default function App() {
     return <Onboarding onComplete={app.saveProfile} />
   }
 
-  const healthScore = computeHealthScore(app.hd, app.wkLog, app.checks, app.profile?.age || 25, app.readiness.score)
-  const insights = generateInsights(app.hd, app.wkLog, healthScore, app.readiness, app.plan)
-  const weeklyReport = generateWeeklyReportData(app.hd, app.wkLog, healthScore, app.plan)
+  const { healthScore, insights, weeklyReport } = app
 
   if (showSettings) {
     return <Settings onClose={() => setShowSettings(false)} />
@@ -91,14 +95,6 @@ export default function App() {
   }
 
   const readyColor = app.readiness.score >= 70 ? '#30d158' : app.readiness.score >= 50 ? '#ff9f0a' : '#ff453a'
-
-  const tabs: { id: TabId; label: string; Icon: typeof LayoutGrid }[] = [
-    { id: 'cmd', label: 'Resumen', Icon: LayoutGrid },
-    { id: 'combat', label: 'Entreno', Icon: Dumbbell },
-    { id: 'fuel', label: 'Nutrición', Icon: UtensilsCrossed },
-    { id: 'recon', label: 'Salud', Icon: Heart },
-    { id: 'intel', label: 'Intel', Icon: MessageCircle },
-  ]
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -177,8 +173,8 @@ export default function App() {
               <Recon hd={app.hd} setHd={app.setHd} medReports={app.medReports} setMedReports={app.setMedReports} />
             )}
             {app.tab === 'intel' && (
-              <Intel plan={app.plan} hd={app.hd} checks={app.checks} scannedMeals={app.scannedMeals}
-                wkLog={app.wkLog} readiness={app.readiness} decision={app.decision} injury={app.injury}
+              <Intel plan={app.plan} readiness={app.readiness} decision={app.decision} injury={app.injury}
+                profile={app.profile}
               />
             )}
           </motion.div>

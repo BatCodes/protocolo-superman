@@ -13,8 +13,6 @@ interface ReconProps {
   setMedReports: React.Dispatch<React.SetStateAction<MedReport[]>>
 }
 
-const TODAY = new Date().toISOString().slice(0, 10)
-
 function MiniSparkline({ data, color }: { data: number[]; color: string }) {
   if (data.length < 2) return null
   const min = Math.min(...data)
@@ -43,6 +41,13 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
 }
 
 export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
+  const TODAY_LOCAL = new Date().toLocaleDateString('sv')
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => { isMountedRef.current = false }
+  }, [])
+
   const [healthBriefing, setHealthBriefing] = useState<string | null>(null)
   const [hbLoading, setHbLoading] = useState(false)
 
@@ -57,8 +62,8 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
       [{ role: 'user', content: `BRIEFING DE SALUD. Métricas activas: ${filledMetrics.join(', ')}. Último peso: ${lastWeight || 'N/A'}kg. Último sueño: ${lastSleep || 'N/A'}h. Último HRV: ${lastHRV || 'N/A'}ms. Identifica qué métricas faltan por registrar y qué priorizar. 60 palabras máx.` }],
       'Eres un médico deportivo. Briefing ultra-conciso de métricas de salud.',
       250
-    ).then(t => { setHealthBriefing(t); setHbLoading(false) })
-      .catch(() => setHbLoading(false))
+    ).then(t => { if (isMountedRef.current) { setHealthBriefing(t); setHbLoading(false) } })
+      .catch(() => { if (isMountedRef.current) setHbLoading(false) })
   }, [])
 
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -73,7 +78,12 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
 
     const updated = { ...hd }
     if (!updated[id]) updated[id] = []
-    updated[id] = [...updated[id], { d: TODAY, v }]
+    const lastEntry = updated[id][updated[id].length - 1]
+    if (lastEntry && lastEntry.d === TODAY_LOCAL) {
+      updated[id] = [...updated[id].slice(0, -1), { d: TODAY_LOCAL, v }]
+    } else {
+      updated[id] = [...updated[id], { d: TODAY_LOCAL, v }]
+    }
     setHd(updated)
     await save('health-data', updated)
     setEditingId(null)
@@ -98,8 +108,13 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
         }],
         AI_SYSTEM_PROMPT,
       )
+      if (!isMountedRef.current) return
       setPdfResult(text)
-      const updatedReports = [...medReports, { date: TODAY, filename: file.name, analysis: text }]
+      const newReport = { date: TODAY_LOCAL, filename: file.name, analysis: text }
+      const lastReport = medReports[medReports.length - 1]
+      const updatedReports = lastReport && lastReport.date === TODAY_LOCAL
+        ? [...medReports.slice(0, -1), newReport]
+        : [...medReports, newReport]
       setMedReports(updatedReports)
       await save('med-reports', updatedReports)
     } catch {
@@ -302,7 +317,7 @@ export function Recon({ hd, setHd, medReports, setMedReports }: ReconProps) {
           <div className="bg-[#1c1c1e] rounded-2xl overflow-hidden">
             {medReports.slice(-3).reverse().map((r, i) => (
               <div
-                key={i}
+                key={r.date + r.filename}
                 className="px-4 py-3 flex justify-between items-center"
                 style={i < Math.min(medReports.length, 3) - 1 ? { borderBottom: '0.33px solid rgba(255,255,255,0.08)' } : undefined}
               >
